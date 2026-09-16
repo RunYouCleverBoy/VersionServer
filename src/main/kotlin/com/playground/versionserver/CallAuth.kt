@@ -50,7 +50,7 @@ suspend fun ApplicationCall.requireProjectAccess(
     project: String,
 ): PersistedUser? {
     val user = requireUser(tokens, database) ?: return null
-    if (!database.isAuthorized(user.id, project)) {
+    if (!database.isAuthorized(user, project)) {
         respond(HttpStatusCode.Forbidden)
         return null
     }

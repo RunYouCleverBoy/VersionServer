@@ -41,7 +41,7 @@ fun Application.module(config: AppConfig) {
 
         get("/projects") {
             val user = call.requireUser(tokens, database) ?: return@get
-            call.respond(ProjectListResponse(projects = database.projectsFor(user.id)))
+            call.respond(ProjectListResponse(projects = database.projectsFor(user)))
         }
 
         post("/projects/{project}/access") {

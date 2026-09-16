@@ -51,6 +51,43 @@ class ProjectAccessTest {
     }
 
     @Test
+    fun `admin sees every project`() = withVersionServer {
+        val client = jsonHttpClient()
+        val adminToken = client.login("admin", "admin-pass")
+        client.post("/projects/alpha/access") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+            contentType(ContentType.Application.Json)
+            setBody(GrantAccessRequest(userId = "alice"))
+        }
+        client.post("/projects/beta/access") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+            contentType(ContentType.Application.Json)
+            setBody(GrantAccessRequest(userId = "bob"))
+        }
+        val list = client.get("/projects") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+        }
+        assertEquals(HttpStatusCode.OK, list.status)
+        assertEquals(listOf("alpha", "beta"), list.body<ProjectListResponse>().projects.sorted())
+    }
+
+    @Test
+    fun `admin can list versions of a project they were not granted`() = withVersionServer {
+        val client = jsonHttpClient()
+        val adminToken = client.login("admin", "admin-pass")
+        client.post("/projects/alpha/access") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+            contentType(ContentType.Application.Json)
+            setBody(GrantAccessRequest(userId = "alice"))
+        }
+        val versions = client.get("/projects/alpha/versions") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+        }
+        assertEquals(HttpStatusCode.OK, versions.status)
+        assertEquals(emptyList(), versions.body<VersionListResponse>().versions)
+    }
+
+    @Test
     fun `client cannot authorize a user for a project`() = withVersionServer {
         val client = jsonHttpClient()
         val aliceToken = client.login("alice", "alice-pass")

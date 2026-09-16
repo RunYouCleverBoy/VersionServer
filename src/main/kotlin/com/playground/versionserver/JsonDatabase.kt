@@ -51,11 +51,18 @@ class JsonDatabase(private val path: Path) {
         persist()
     }
 
-    fun projectsFor(userId: String): List<String> =
-        state.grants.filter { it.userId == userId }.map { it.project }.distinct()
+    fun projectsFor(user: PersistedUser): List<String> {
+        if (user.role == Role.Admin) return allProjects()
+        return state.grants.filter { it.userId == user.id }.map { it.project }.distinct()
+    }
 
-    fun isAuthorized(userId: String, project: String): Boolean =
-        state.grants.any { it.userId == userId && it.project == project }
+    fun isAuthorized(user: PersistedUser, project: String): Boolean {
+        if (user.role == Role.Admin) return true
+        return state.grants.any { it.userId == user.id && it.project == project }
+    }
+
+    private fun allProjects(): List<String> =
+        (state.grants.map { it.project } + state.artifacts.map { it.project }).distinct()
 
     fun addArtifact(project: String, version: String, fileName: String) {
         if (state.artifacts.any { it.project == project && it.version == version && it.fileName == fileName }) return
