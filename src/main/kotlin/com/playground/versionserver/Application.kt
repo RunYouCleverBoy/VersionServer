@@ -19,10 +19,12 @@ import io.ktor.server.routing.routing
 import io.ktor.utils.io.readRemaining
 import kotlinx.io.readByteArray
 
-fun Application.module(config: AppConfig) {
+fun Application.module(
+    config: AppConfig,
+    fileStore: FileStore = FilesystemFileStore(config.storageRoot),
+) {
     val database = JsonDatabase(config.jsonStorePath)
     val tokens = TokenService()
-    val fileStore = FilesystemFileStore(config.storageRoot)
 
     install(ContentNegotiation) {
         json()

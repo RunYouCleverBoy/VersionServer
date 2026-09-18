@@ -7,21 +7,21 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
 
-class FilesystemFileStore(private val root: Path) {
-    fun store(project: String, version: String, fileName: String, bytes: ByteArray): Boolean {
+class FilesystemFileStore(private val root: Path) : FileStore {
+    override fun store(project: String, version: String, fileName: String, bytes: ByteArray): Boolean {
         val path = pathFor(project, version, fileName) ?: return false
         Files.createDirectories(path.parent)
         path.writeBytes(bytes)
         return true
     }
 
-    fun read(project: String, version: String, fileName: String): ByteArray? {
+    override fun read(project: String, version: String, fileName: String): ByteArray? {
         val path = pathFor(project, version, fileName) ?: return null
         if (!path.exists()) return null
         return path.readBytes()
     }
 
-    fun list(project: String, version: String): List<String> {
+    override fun list(project: String, version: String): List<String> {
         val directory = directoryFor(project, version) ?: return emptyList()
         if (!directory.exists()) return emptyList()
         return directory.listDirectoryEntries()
@@ -29,7 +29,7 @@ class FilesystemFileStore(private val root: Path) {
             .map { it.fileName.toString() }
     }
 
-    fun delete(project: String, version: String, fileName: String) {
+    override fun delete(project: String, version: String, fileName: String) {
         val path = pathFor(project, version, fileName) ?: return
         Files.deleteIfExists(path)
     }

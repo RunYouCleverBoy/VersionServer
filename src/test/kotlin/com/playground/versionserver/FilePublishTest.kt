@@ -142,6 +142,32 @@ class FilePublishTest {
     }
 
     @Test
+    fun `a version can hold more than one file`() = withVersionServer {
+        val client = jsonHttpClient()
+        val adminToken = client.login("admin", "admin-pass")
+        client.post("/projects/alpha/access") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+            contentType(ContentType.Application.Json)
+            setBody(GrantAccessRequest(userId = "alice"))
+        }
+        upload(client, adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
+        upload(client, adminToken, "alpha", "1.0", "notes.txt", byteArrayOf(2, 3))
+        val aliceToken = client.login("alice", "alice-pass")
+        val files = client.get("/projects/alpha/versions/1.0/files") {
+            header(HttpHeaders.Authorization, "Bearer $aliceToken")
+        }
+        assertEquals(listOf("app.bin", "notes.txt"), files.body<FileListResponse>().files.sorted())
+        val app = client.get("/projects/alpha/versions/1.0/files/app.bin") {
+            header(HttpHeaders.Authorization, "Bearer $aliceToken")
+        }
+        val notes = client.get("/projects/alpha/versions/1.0/files/notes.txt") {
+            header(HttpHeaders.Authorization, "Bearer $aliceToken")
+        }
+        assertContentEquals(byteArrayOf(1), app.body<ByteArray>())
+        assertContentEquals(byteArrayOf(2, 3), notes.body<ByteArray>())
+    }
+
+    @Test
     fun `projects stay isolated when listing and downloading`() = withVersionServer {
         val client = jsonHttpClient()
         val adminToken = client.login("admin", "admin-pass")
