@@ -1,0 +1,289 @@
+:root {
+  --ink: #152028;
+  --muted: #5a6a76;
+  --paper: #f3f6f4;
+  --panel: #ffffff;
+  --line: #d5ddd8;
+  --accent: #0f766e;
+  --accent-ink: #043f3a;
+  --danger: #9f1239;
+  --shadow: 0 18px 40px rgba(21, 32, 40, 0.08);
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Source Sans 3", "Avenir Next", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 34%),
+    linear-gradient(160deg, #e8efe9 0%, var(--paper) 42%, #e4ebe8 100%);
+}
+
+#app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  letter-spacing: -0.03em;
+}
+
+.top-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.docs-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.docs-link:hover {
+  color: var(--accent-ink);
+}
+
+.session {
+  margin: 0;
+  color: var(--muted);
+}
+
+.panel,
+.workspace,
+.admin-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  max-width: 420px;
+  padding: 1.75rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  min-height: 520px;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.lede,
+.meta {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.stack.compact {
+  gap: 0.65rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+input,
+button,
+select {
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  background: #fbfcfb;
+  color: var(--ink);
+}
+
+button {
+  appearance: none;
+  border: 0;
+  background: var(--accent);
+  color: white;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-ink);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  margin-top: auto;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-right: 1px solid var(--line);
+  background: #f8faf8;
+}
+
+.main {
+  padding: 1.5rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.menu button,
+.menu a {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.65rem 0.7rem;
+}
+
+.menu button:hover,
+.menu a:hover,
+.menu .active {
+  border-color: var(--line);
+  background: white;
+}
+
+.menu .danger {
+  color: var(--danger);
+  width: auto;
+  padding: 0.2rem 0.45rem;
+  background: transparent;
+  border: 0;
+}
+
+.admin-box {
+  padding: 0.9rem;
+}
+
+.drop-zone {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem;
+  border: 1.5px dashed var(--line);
+  background: #fbfcfb;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.drop-zone p {
+  margin: 0;
+}
+
+.drop-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.drop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.drop-actions .ghost {
+  margin-top: 0;
+}
+
+.pending-files {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  text-align: left;
+  max-height: 8rem;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pending-files li {
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.error {
+  color: var(--danger);
+  margin: 0.9rem 0 0;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--ink);
+  color: white;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 800px) {
+  .workspace,
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}

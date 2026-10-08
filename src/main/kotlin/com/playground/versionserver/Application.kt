@@ -7,11 +7,13 @@ import io.ktor.http.content.forEachPart
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -38,6 +40,18 @@ fun Application.module(
     }
 
     routing {
+        get("/") {
+            call.respondRedirect("/ui/")
+        }
+
+        get("/ui") {
+            call.respondRedirect("/ui/")
+        }
+
+        staticResources("/ui", "ui") {
+            default("index.html")
+        }
+
         post("/login") {
             val request = call.receive<LoginRequest>()
             val user = database.authenticate(request.userId, request.password)

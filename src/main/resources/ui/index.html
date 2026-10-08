@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Version Server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/ui/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <p class="brand">Version Server</p>
+      <div class="top-meta">
+        <a class="docs-link" href="/doc/">Docs</a>
+        <p id="session" class="session" hidden></p>
+      </div>
+    </header>
+
+    <section id="login-view" class="panel">
+      <h1>Sign in</h1>
+      <p class="lede">Open projects you are allowed to see, then list and download versioned files.</p>
+      <form id="login-form" class="stack">
+        <label>
+          User id
+          <input id="user-id" name="userId" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+      <p id="login-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="workspace-view" class="workspace" hidden>
+      <aside class="rail">
+        <h2>Projects</h2>
+        <ul id="project-list" class="menu"></ul>
+        <div id="admin-users" class="admin-box" hidden>
+          <h3>Enroll user</h3>
+          <form id="enroll-form" class="stack compact">
+            <label>
+              User id
+              <input id="enroll-user-id" required />
+            </label>
+            <label>
+              Password
+              <input id="enroll-password" type="password" required />
+            </label>
+            <label>
+              Role
+              <select id="enroll-role">
+                <option value="Client">Client</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </label>
+            <button type="submit">Enroll</button>
+          </form>
+          <h3>Users</h3>
+          <ul id="user-list" class="menu"></ul>
+        </div>
+        <div id="admin-grant" class="admin-box" hidden>
+          <h3>Grant access</h3>
+          <form id="grant-form" class="stack compact">
+            <label>
+              Project
+              <input id="grant-project" required />
+            </label>
+            <label>
+              User id
+              <input id="grant-user" required />
+            </label>
+            <button type="submit">Authorize</button>
+          </form>
+        </div>
+        <div id="account-box" class="admin-box" hidden>
+          <h3>Change password</h3>
+          <form id="password-form" class="stack compact">
+            <label>
+              Current password
+              <input id="current-password" type="password" autocomplete="current-password" required />
+            </label>
+            <label>
+              New password
+              <input id="new-password" type="password" autocomplete="new-password" required />
+            </label>
+            <button type="submit">Update password</button>
+          </form>
+        </div>
+        <button id="sign-out" type="button" class="ghost">Sign out</button>
+      </aside>
+
+      <main class="main">
+        <p id="empty-state" class="lede">Choose a project to browse versions and files.</p>
+
+        <div id="project-detail" hidden>
+          <h2 id="project-title"></h2>
+          <div class="columns">
+            <div>
+              <h3>Versions</h3>
+              <ul id="version-list" class="menu"></ul>
+            </div>
+            <div>
+              <h3>Files</h3>
+              <p id="version-label" class="meta"></p>
+              <ul id="file-list" class="menu"></ul>
+              <div id="admin-upload" class="admin-box" hidden>
+                <h3>Upload</h3>
+                <form id="upload-form" class="stack compact">
+                  <label>
+                    Version
+                    <input id="upload-version" required />
+                  </label>
+                  <div id="drop-zone" class="drop-zone" tabindex="0">
+                    <p>Drag files or folders here</p>
+                    <p class="meta">or choose files / a folder</p>
+                    <div class="drop-actions">
+                      <button type="button" id="pick-files" class="ghost">Choose files</button>
+                      <button type="button" id="pick-folder" class="ghost">Choose folder</button>
+                    </div>
+                    <input id="upload-file" type="file" multiple hidden />
+                    <input id="upload-folder" type="file" webkitdirectory multiple hidden />
+                    <ul id="pending-files" class="pending-files"></ul>
+                  </div>
+                  <button type="submit">Upload</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <p id="toast" class="toast" hidden></p>
+  </div>
+  <script src="/ui/app.js"></script>
+</body>
+</html>
