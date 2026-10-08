@@ -122,6 +122,8 @@ class ClientUiTest {
         assertTrue(script.contains("User must exist") || script.contains("Grant failed"))
         assertTrue(script.contains("/versions/") && script.contains("DELETE"))
         assertTrue(script.contains("Delete version") || script.contains("Deleted version"))
+        assertTrue(script.contains("(latest)"))
+        assertTrue(script.contains("uploadedAt"))
     }
 
     @Test

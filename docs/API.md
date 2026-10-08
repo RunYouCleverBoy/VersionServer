@@ -17,7 +17,7 @@ Runtime data lives under the process working directory (defaults below). The `da
 
 | What | Default path | Layout / notes |
 |------|--------------|----------------|
-| JSON database | `data/store.json` | Users (`passwordHash` only), project grants, and artifact index. Auto-created with seeded users if missing or empty. |
+| JSON database | `data/store.json` | Users (`passwordHash` only), project grants, and artifact index (`project` / `version` / `fileName` / `uploadedAt`). Auto-created with seeded users if missing or empty. |
 | File bytes | `data/files/` | `{project}/{version}/{relative-file-path}` via the filesystem `FileStore`. |
 
 Override with `VERSION_SERVER_JSON` and `VERSION_SERVER_STORAGE` (see [Configuration](#configuration)). Paths may be absolute.
@@ -217,11 +217,16 @@ Grants an **existing** user access to `{project}`. Creates the project name in t
 
 Requires project access (Admin always; Client if granted).
 
+Returns versions for the project. `latest` is `true` for the version whose newest artifact `uploadedAt` is the most recent in the project.
+
 **Response** `200 OK`:
 
 ```json
 {
-  "versions": ["1.0", "2.0"]
+  "versions": [
+    { "name": "1.0", "latest": false },
+    { "name": "2.0", "latest": true }
+  ]
 }
 ```
 
@@ -254,13 +259,16 @@ A version may contain many files.
 
 Requires project access.
 
-Lists file paths for that version (including nested relative paths).
+Lists file paths for that version (including nested relative paths), each with an ISO-8601 `uploadedAt` timestamp from the artifact index.
 
 **Response** `200 OK`:
 
 ```json
 {
-  "files": ["app.bin", "lib/util.bin"]
+  "files": [
+    { "name": "app.bin", "uploadedAt": "2026-10-08T10:15:30Z" },
+    { "name": "lib/util.bin", "uploadedAt": "2026-10-08T10:16:01Z" }
+  ]
 }
 ```
 

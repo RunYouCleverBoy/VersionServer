@@ -163,7 +163,7 @@ class SpecCoverageTest {
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $adminToken")
         }
-        assertEquals(listOf("app.bin"), files.body<FileListResponse>().files)
+        assertEquals(listOf("app.bin"), files.body<FileListResponse>().fileNames())
         val download = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $adminToken")
         }
@@ -210,7 +210,7 @@ class SpecCoverageTest {
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(emptyList(), files.body<FileListResponse>().files)
+        assertEquals(emptyList(), files.body<FileListResponse>().fileNames())
         val download = client.get("/projects/alpha/versions/1.0/files/lib/util.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }

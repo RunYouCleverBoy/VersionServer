@@ -35,8 +35,8 @@ Anonymous users may load the client. All data operations go through the HTTP API
 - See session label (`userId · role`).
 - Change their own password via a form that posts `POST /password` (current + new).
 - List projects from `GET /projects` (filtered by server rules).
-- Select a project → list versions.
-- Select a version → list files; download a file (including nested paths).
+- Select a project → list versions; show `(latest)` beside the latest version name.
+- Select a version → list files (with upload times); download a file (including nested paths).
 
 ### Admin-only
 

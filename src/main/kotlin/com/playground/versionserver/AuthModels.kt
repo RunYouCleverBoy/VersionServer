@@ -64,11 +64,23 @@ data class ProjectListResponse(
 )
 
 @Serializable
+data class VersionSummary(
+    val name: String,
+    val latest: Boolean,
+)
+
+@Serializable
 data class VersionListResponse(
-    val versions: List<String>,
+    val versions: List<VersionSummary>,
+)
+
+@Serializable
+data class FileSummary(
+    val name: String,
+    val uploadedAt: String,
 )
 
 @Serializable
 data class FileListResponse(
-    val files: List<String>,
+    val files: List<FileSummary>,
 )

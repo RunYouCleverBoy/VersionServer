@@ -53,7 +53,7 @@ class FileDeleteTest {
         val download = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(emptyList(), files.body<FileListResponse>().files)
+        assertEquals(emptyList(), files.body<FileListResponse>().fileNames())
         assertEquals(HttpStatusCode.NotFound, download.status)
     }
 

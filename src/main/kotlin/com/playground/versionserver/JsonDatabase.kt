@@ -3,6 +3,7 @@ package com.playground.versionserver
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
+import java.time.Instant
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.exists
 import kotlin.io.path.readText
@@ -26,6 +27,7 @@ data class PersistedArtifact(
     val project: String,
     val version: String,
     val fileName: String,
+    val uploadedAt: String = Instant.EPOCH.toString(),
 )
 
 @Serializable
@@ -91,16 +93,44 @@ class JsonDatabase(private val path: Path) {
     private fun allProjects(): List<String> =
         (state.grants.map { it.project } + state.artifacts.map { it.project }).distinct()
 
-    fun addArtifact(project: String, version: String, fileName: String) {
-        if (state.artifacts.any { it.project == project && it.version == version && it.fileName == fileName }) return
+    fun addArtifact(
+        project: String,
+        version: String,
+        fileName: String,
+        uploadedAt: Instant = Instant.now(),
+    ) {
+        val stamp = uploadedAt.toString()
+        val existing = findArtifact(project, version, fileName)
+        val artifact = PersistedArtifact(
+            project = project,
+            version = version,
+            fileName = fileName,
+            uploadedAt = stamp,
+        )
         state = state.copy(
-            artifacts = state.artifacts + PersistedArtifact(project, version, fileName),
+            artifacts = if (existing == null) {
+                state.artifacts + artifact
+            } else {
+                state.artifacts.map { if (it == existing) artifact else it }
+            },
         )
         persist()
     }
 
-    fun versionsFor(project: String): List<String> =
-        state.artifacts.filter { it.project == project }.map { it.version }.distinct()
+    fun versionsFor(project: String): List<VersionSummary> {
+        val byVersion = state.artifacts
+            .filter { it.project == project }
+            .groupBy { it.version }
+        if (byVersion.isEmpty()) return emptyList()
+        val latestName = byVersion.maxWith(
+            compareBy<Map.Entry<String, List<PersistedArtifact>>> { (_, artifacts) ->
+                artifacts.maxOf { Instant.parse(it.uploadedAt) }
+            }.thenBy { it.key },
+        ).key
+        return byVersion.keys.sorted().map { name ->
+            VersionSummary(name = name, latest = name == latestName)
+        }
+    }
 
     fun artifacts(project: String, version: String): List<PersistedArtifact> =
         state.artifacts.filter { it.project == project && it.version == version }
@@ -134,11 +164,26 @@ class JsonDatabase(private val path: Path) {
         if (loaded.users.isEmpty()) {
             return writeDefaults()
         }
+        // Rewrite older stores that omit artifact uploadedAt so the field is persisted.
+        if (loaded.artifacts.isNotEmpty() && !text.contains("uploadedAt")) {
+            val base = Instant.now()
+            val withTimestamps = loaded.copy(
+                artifacts = loaded.artifacts.mapIndexed { index, artifact ->
+                    artifact.copy(uploadedAt = base.plusSeconds(index.toLong()).toString())
+                },
+            )
+            persist(withTimestamps)
+            return withTimestamps
+        }
         return loaded
     }
 
     private fun writeDefaults(): PersistedState {
-        val seeded = PersistedState(users = defaultUsers)
+        val seeded = PersistedState(
+            users = defaultUsers,
+            grants = emptyList(),
+            artifacts = emptyList(),
+        )
         persist(seeded)
         return seeded
     }

@@ -50,12 +50,12 @@ class FilePublishTest {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
         assertEquals(HttpStatusCode.OK, versions.status)
-        assertEquals(listOf("1.0"), versions.body<VersionListResponse>().versions)
+        assertEquals(listOf("1.0"), versions.body<VersionListResponse>().versionNames())
 
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("app.bin"), files.body<FileListResponse>().files)
+        assertEquals(listOf("app.bin"), files.body<FileListResponse>().fileNames())
 
         val download = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -138,7 +138,7 @@ class FilePublishTest {
         val versions = client.get("/projects/alpha/versions") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("1.0", "2.0"), versions.body<VersionListResponse>().versions.sorted())
+        assertEquals(listOf("1.0", "2.0"), versions.body<VersionListResponse>().versionNames().sorted())
     }
 
     @Test
@@ -156,7 +156,7 @@ class FilePublishTest {
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("app.bin", "notes.txt"), files.body<FileListResponse>().files.sorted())
+        assertEquals(listOf("app.bin", "notes.txt"), files.body<FileListResponse>().fileNames().sorted())
         val app = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
@@ -195,7 +195,7 @@ class FilePublishTest {
         val alphaVersions = client.get("/projects/alpha/versions") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("1.0"), alphaVersions.body<VersionListResponse>().versions)
+        assertEquals(listOf("1.0"), alphaVersions.body<VersionListResponse>().versionNames())
     }
 
     @Test
@@ -212,7 +212,7 @@ class FilePublishTest {
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("lib/util.bin"), files.body<FileListResponse>().files)
+        assertEquals(listOf("lib/util.bin"), files.body<FileListResponse>().fileNames())
         val download = client.get("/projects/alpha/versions/1.0/files/lib/util.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
@@ -243,7 +243,7 @@ class FilePublishTest {
             val download = client.get("/projects/alpha/versions/1.0/files/app.bin") {
                 header(HttpHeaders.Authorization, "Bearer $aliceToken")
             }
-            assertEquals(listOf("app.bin"), files.body<FileListResponse>().files)
+            assertEquals(listOf("app.bin"), files.body<FileListResponse>().fileNames())
             assertContentEquals(byteArrayOf(7, 8, 9), download.body<ByteArray>())
         }
     }

@@ -39,7 +39,7 @@ class VersionDeleteTest {
         val versions = client.get("/projects/alpha/versions") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("2.0"), versions.body<VersionListResponse>().versions)
+        assertEquals(listOf("2.0"), versions.body<VersionListResponse>().versionNames())
 
         val gone = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -72,7 +72,7 @@ class VersionDeleteTest {
         val versions = client.get("/projects/alpha/versions") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
         }
-        assertEquals(listOf("1.0"), versions.body<VersionListResponse>().versions)
+        assertEquals(listOf("1.0"), versions.body<VersionListResponse>().versionNames())
     }
 
     @Test

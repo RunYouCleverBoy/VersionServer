@@ -84,7 +84,7 @@ class ProjectAccessTest {
             header(HttpHeaders.Authorization, "Bearer $adminToken")
         }
         assertEquals(HttpStatusCode.OK, versions.status)
-        assertEquals(emptyList(), versions.body<VersionListResponse>().versions)
+        assertEquals(emptyList(), versions.body<VersionListResponse>().versionNames())
     }
 
     @Test

@@ -61,3 +61,7 @@ internal fun String.isJwtFormat(): Boolean {
     val parts = split('.')
     return parts.size == 3 && parts.all { it.isNotBlank() }
 }
+
+internal fun VersionListResponse.versionNames(): List<String> = versions.map { it.name }
+
+internal fun FileListResponse.fileNames(): List<String> = files.map { it.name }

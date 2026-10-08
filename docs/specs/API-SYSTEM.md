@@ -68,9 +68,9 @@ If the JSON database path is missing, blank, or has no users, the server writes 
 
 ### Versions and files
 
-- Authorized caller may list versions for a project.
-- Admin may upload a multipart file to a project/version (filename may be nested relative path).
-- Authorized caller may list and download files for a project/version.
+- Authorized caller may list versions for a project; each version includes whether it is `latest` (newest artifact upload time in the project).
+- Admin may upload a multipart file to a project/version (filename may be nested relative path). Each artifact records an `uploadedAt` timestamp (updated on re-upload).
+- Authorized caller may list and download files for a project/version; file listings include `uploadedAt`.
 - Admin may delete a file; afterward list/download treat it as absent (`404` on download).
 - Admin may delete a whole version; afterward it disappears from version lists and its files are absent.
 

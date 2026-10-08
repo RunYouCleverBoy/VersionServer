@@ -275,7 +275,8 @@
 
   function renderVersions(versions) {
     els.versionList.replaceChildren();
-    for (const version of versions) {
+    for (const entry of versions) {
+      const version = entry.name;
       const item = document.createElement("li");
       const row = document.createElement("div");
       row.style.display = "flex";
@@ -284,7 +285,7 @@
 
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = version;
+      button.textContent = entry.latest ? `${version} (latest)` : version;
       if (version === state.version) {
         button.classList.add("active");
       }
@@ -319,6 +320,17 @@
     }
   }
 
+  function formatUploadedAt(iso) {
+    if (!iso) {
+      return "";
+    }
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime()) || date.getTime() === 0) {
+      return "";
+    }
+    return date.toLocaleString();
+  }
+
   function renderFiles(files) {
     els.fileList.replaceChildren();
     els.versionLabel.textContent = state.version
@@ -333,7 +345,8 @@
       els.fileList.append(item);
       return;
     }
-    for (const fileName of files) {
+    for (const file of files) {
+      const fileName = file.name;
       const item = document.createElement("li");
       const row = document.createElement("div");
       row.style.display = "flex";
@@ -355,6 +368,14 @@
         URL.revokeObjectURL(url);
       });
       row.append(link);
+
+      const uploaded = formatUploadedAt(file.uploadedAt);
+      if (uploaded) {
+        const stamp = document.createElement("span");
+        stamp.className = "meta";
+        stamp.textContent = uploaded;
+        row.append(stamp);
+      }
 
       if (isAdmin()) {
         const del = document.createElement("button");

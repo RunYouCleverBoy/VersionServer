@@ -20,6 +20,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.readRemaining
+import java.time.Instant
 import kotlinx.io.readByteArray
 
 fun Application.module(
@@ -173,6 +174,7 @@ fun Application.module(
             call.respond(VersionListResponse(versions = database.versionsFor(project)))
         }
 
+
         post("/projects/{project}/versions/{version}/files") {
             call.requireAdmin(tokens, database, cookieName) ?: return@post
             val project = call.parameters["project"]
@@ -212,9 +214,17 @@ fun Application.module(
                 return@get
             }
             call.requireProjectAccess(tokens, database, cookieName, project) ?: return@get
+            val meta = database.artifacts(project, version).associateBy { it.fileName }
             call.respond(
                 FileListResponse(
-                    files = fileStore.list(project, version),
+                    files = fileStore.list(project, version)
+                        .sorted()
+                        .map { name ->
+                            FileSummary(
+                                name = name,
+                                uploadedAt = meta[name]?.uploadedAt ?: Instant.EPOCH.toString(),
+                            )
+                        },
                 ),
             )
         }
