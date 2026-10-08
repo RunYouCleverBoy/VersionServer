@@ -11,6 +11,17 @@ System specs:
 - [`specs/API-SYSTEM.md`](specs/API-SYSTEM.md) — API behavior and invariants
 - [`specs/CLIENT-SYSTEM.md`](specs/CLIENT-SYSTEM.md) — web client behavior
 
+## Data storage
+
+Runtime data lives under the process working directory (defaults below). The `data/` tree is gitignored and is created on first use.
+
+| What | Default path | Layout / notes |
+|------|--------------|----------------|
+| JSON database | `data/store.json` | Users (`passwordHash` only), project grants, and artifact index. Auto-created with seeded users if missing or empty. |
+| File bytes | `data/files/` | `{project}/{version}/{relative-file-path}` via the filesystem `FileStore`. |
+
+Override with `VERSION_SERVER_JSON` and `VERSION_SERVER_STORAGE` (see [Configuration](#configuration)). Paths may be absolute.
+
 ## Authentication
 
 Auth is **JWT-based** (HMAC-signed). `POST /login` issues a JWT and stores the same value in an `HttpOnly` cookie (`VS_TOKEN` by default). Protected endpoints accept either:
@@ -38,7 +49,7 @@ or the `VS_TOKEN` cookie (no in-memory server session map).
 
 ### Seeded users
 
-Created when the JSON store is empty:
+Created automatically when the JSON store file is missing, blank, or has no users (typical fresh install; `data/` is not in git):
 
 | User id | Password | Role |
 |---------|----------|------|
@@ -295,8 +306,9 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VERSION_SERVER_STORAGE` | `data/files` | Root directory for file bytes |
-| `VERSION_SERVER_JSON` | `data/store.json` | Users, grants, artifact index (passwords stored as SHA-256 `passwordHash` only) |
+| `VERSION_SERVER_STORAGE` | `data/files` | Root directory for published file bytes (`{project}/{version}/...`) |
+| `VERSION_SERVER_JSON` | `data/store.json` | JSON database path (users, grants, artifact index; SHA-256 `passwordHash` only). Created with seeded users if missing or empty. |
+| `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs |
 
 Listen port: `8080` (set in `Main.kt`).
 

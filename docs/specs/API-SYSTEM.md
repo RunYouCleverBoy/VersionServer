@@ -19,12 +19,23 @@ Provide a JWT-authenticated HTTP API for publishing and retrieving versioned pro
 3. Wrong role for an Admin-only operation yields `403`.
 4. Project access for Clients is explicit (grant). Admins bypass project grants.
 5. Grants may only target **existing** enrolled user ids. Unknown user ids yield `404`.
-6. Users are created only by Admin enrollment (plus optional seed on empty store).
+6. Users are created only by Admin enrollment (plus automatic seed of default users when the JSON store is missing, blank, or has no users).
 7. File bytes are accessed only through the `FileStore` port (filesystem adapter today).
 8. A version may contain many files, including nested relative paths under that version.
 9. Path traversal (`..`) in file names is rejected.
 10. Persistence of users, grants, and artifact index survives process restart (JSON store). File bytes survive restart under the configured storage root. A JWT issued before restart remains valid afterward when the same signing secret is used.
 11. The JSON store never keeps plaintext passwords: only SHA-256 hex digests (`passwordHash`). Login/enroll/change-password APIs still accept plaintext over the wire; comparison is hash-based.
+
+## Data locations
+
+Defaults are relative to the process working directory (`data/` is not checked into git):
+
+| Store | Default | Contents |
+|-------|---------|----------|
+| JSON database | `data/store.json` (`VERSION_SERVER_JSON`) | Users, grants, artifact metadata |
+| File storage root | `data/files` (`VERSION_SERVER_STORAGE`) | Versioned file bytes at `{project}/{version}/{file...}` |
+
+If the JSON database path is missing, blank, or has no users, the server writes a default database with the seeded accounts before serving requests.
 
 ## Capabilities
 

@@ -123,13 +123,21 @@ class JsonDatabase(private val path: Path) {
     }
 
     private fun loadOrSeed(): PersistedState {
-        val text = if (path.exists()) path.readText() else ""
-        val loaded = if (text.isBlank()) {
-            PersistedState()
-        } else {
-            json.decodeFromString(PersistedState.serializer(), text)
+        if (!path.exists()) {
+            return writeDefaults()
         }
-        if (loaded.users.isNotEmpty()) return loaded
+        val text = path.readText()
+        if (text.isBlank()) {
+            return writeDefaults()
+        }
+        val loaded = json.decodeFromString(PersistedState.serializer(), text)
+        if (loaded.users.isEmpty()) {
+            return writeDefaults()
+        }
+        return loaded
+    }
+
+    private fun writeDefaults(): PersistedState {
         val seeded = PersistedState(users = defaultUsers)
         persist(seeded)
         return seeded
