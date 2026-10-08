@@ -296,7 +296,7 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `VERSION_SERVER_STORAGE` | `data/files` | Root directory for file bytes |
-| `VERSION_SERVER_JSON` | `data/store.json` | Users, grants, artifact index |
+| `VERSION_SERVER_JSON` | `data/store.json` | Users, grants, artifact index (passwords stored as SHA-256 `passwordHash` only) |
 
 Listen port: `8080` (set in `Main.kt`).
 

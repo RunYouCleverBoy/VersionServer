@@ -11,7 +11,7 @@ import kotlin.io.path.writeText
 @Serializable
 data class PersistedUser(
     val id: String,
-    val password: String,
+    val passwordHash: String,
     val role: Role,
 )
 
@@ -39,8 +39,10 @@ class JsonDatabase(private val path: Path) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private var state: PersistedState = loadOrSeed()
 
-    fun authenticate(userId: String, password: String): PersistedUser? =
-        state.users.firstOrNull { it.id == userId && it.password == password }
+    fun authenticate(userId: String, password: String): PersistedUser? {
+        val hash = sha256Hex(password)
+        return state.users.firstOrNull { it.id == userId && it.passwordHash == hash }
+    }
 
     fun user(userId: String): PersistedUser? =
         state.users.firstOrNull { it.id == userId }
@@ -50,7 +52,7 @@ class JsonDatabase(private val path: Path) {
     fun addUser(userId: String, password: String, role: Role): PersistedUser? {
         if (userId.isBlank() || password.isEmpty()) return null
         if (state.users.any { it.id == userId }) return null
-        val created = PersistedUser(id = userId, password = password, role = role)
+        val created = PersistedUser(id = userId, passwordHash = sha256Hex(password), role = role)
         state = state.copy(users = state.users + created)
         persist()
         return created
@@ -61,7 +63,7 @@ class JsonDatabase(private val path: Path) {
         val existing = authenticate(userId, currentPassword) ?: return false
         state = state.copy(
             users = state.users.map { user ->
-                if (user.id == existing.id) user.copy(password = newPassword) else user
+                if (user.id == existing.id) user.copy(passwordHash = sha256Hex(newPassword)) else user
             },
         )
         persist()
@@ -125,7 +127,7 @@ class JsonDatabase(private val path: Path) {
         val loaded = if (text.isBlank()) {
             PersistedState()
         } else {
-            json.decodeFromString<PersistedState>(text)
+            json.decodeFromString(PersistedState.serializer(), text)
         }
         if (loaded.users.isNotEmpty()) return loaded
         val seeded = PersistedState(users = defaultUsers)
@@ -136,13 +138,14 @@ class JsonDatabase(private val path: Path) {
     private fun persist(next: PersistedState = state) {
         path.createParentDirectories()
         path.writeText(json.encodeToString(PersistedState.serializer(), next))
+        state = next
     }
 
     companion object {
         val defaultUsers = listOf(
-            PersistedUser(id = "admin", password = "admin-pass", role = Role.Admin),
-            PersistedUser(id = "alice", password = "alice-pass", role = Role.Client),
-            PersistedUser(id = "bob", password = "bob-pass", role = Role.Client),
+            PersistedUser(id = "admin", passwordHash = sha256Hex("admin-pass"), role = Role.Admin),
+            PersistedUser(id = "alice", passwordHash = sha256Hex("alice-pass"), role = Role.Client),
+            PersistedUser(id = "bob", passwordHash = sha256Hex("bob-pass"), role = Role.Client),
         )
     }
 }

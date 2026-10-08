@@ -24,6 +24,7 @@ Provide a JWT-authenticated HTTP API for publishing and retrieving versioned pro
 8. A version may contain many files, including nested relative paths under that version.
 9. Path traversal (`..`) in file names is rejected.
 10. Persistence of users, grants, and artifact index survives process restart (JSON store). File bytes survive restart under the configured storage root. A JWT issued before restart remains valid afterward when the same signing secret is used.
+11. The JSON store never keeps plaintext passwords: only SHA-256 hex digests (`passwordHash`). Login/enroll/change-password APIs still accept plaintext over the wire; comparison is hash-based.
 
 ## Capabilities
 
