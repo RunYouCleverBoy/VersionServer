@@ -199,6 +199,28 @@ class FilePublishTest {
     }
 
     @Test
+    fun `nested file paths under a version can be listed and downloaded`() = withVersionServer {
+        val client = jsonHttpClient()
+        val adminToken = client.login("admin", "admin-pass")
+        client.post("/projects/alpha/access") {
+            header(HttpHeaders.Authorization, "Bearer $adminToken")
+            contentType(ContentType.Application.Json)
+            setBody(GrantAccessRequest(userId = "alice"))
+        }
+        upload(client, adminToken, "alpha", "1.0", "lib/util.bin", byteArrayOf(4, 5))
+        val aliceToken = client.login("alice", "alice-pass")
+        val files = client.get("/projects/alpha/versions/1.0/files") {
+            header(HttpHeaders.Authorization, "Bearer $aliceToken")
+        }
+        assertEquals(listOf("lib/util.bin"), files.body<FileListResponse>().files)
+        val download = client.get("/projects/alpha/versions/1.0/files/lib/util.bin") {
+            header(HttpHeaders.Authorization, "Bearer $aliceToken")
+        }
+        assertEquals(HttpStatusCode.OK, download.status)
+        assertContentEquals(byteArrayOf(4, 5), download.body<ByteArray>())
+    }
+
+    @Test
     fun `uploaded files are still listable and downloadable after restart`() {
         val storageRoot = createTempDirectory("vs-files")
         val jsonStorePath = createTempFile("vs-store", ".json")

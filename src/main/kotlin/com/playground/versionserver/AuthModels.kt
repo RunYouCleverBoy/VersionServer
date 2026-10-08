@@ -17,11 +17,43 @@ data class LoginRequest(
 @Serializable
 data class LoginResponse(
     val token: String,
+    val userId: String,
+    val role: Role,
 )
 
 @Serializable
 data class GrantAccessRequest(
     val userId: String,
+)
+
+@Serializable
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String,
+)
+
+@Serializable
+data class EnrollUserRequest(
+    val userId: String,
+    val password: String,
+    val role: Role,
+)
+
+@Serializable
+data class EnrollUserResponse(
+    val userId: String,
+    val role: Role,
+)
+
+@Serializable
+data class UserSummary(
+    val userId: String,
+    val role: Role,
+)
+
+@Serializable
+data class UserListResponse(
+    val users: List<UserSummary>,
 )
 
 @Serializable

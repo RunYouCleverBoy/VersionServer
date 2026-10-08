@@ -45,10 +45,35 @@ class JsonDatabase(private val path: Path) {
     fun user(userId: String): PersistedUser? =
         state.users.firstOrNull { it.id == userId }
 
-    fun addGrant(userId: String, project: String) {
-        if (state.grants.any { it.userId == userId && it.project == project }) return
+    fun users(): List<PersistedUser> = state.users
+
+    fun addUser(userId: String, password: String, role: Role): PersistedUser? {
+        if (userId.isBlank() || password.isEmpty()) return null
+        if (state.users.any { it.id == userId }) return null
+        val created = PersistedUser(id = userId, password = password, role = role)
+        state = state.copy(users = state.users + created)
+        persist()
+        return created
+    }
+
+    fun changePassword(userId: String, currentPassword: String, newPassword: String): Boolean? {
+        if (newPassword.isEmpty()) return null
+        val existing = authenticate(userId, currentPassword) ?: return false
+        state = state.copy(
+            users = state.users.map { user ->
+                if (user.id == existing.id) user.copy(password = newPassword) else user
+            },
+        )
+        persist()
+        return true
+    }
+
+    fun addGrant(userId: String, project: String): Boolean {
+        if (user(userId) == null) return false
+        if (state.grants.any { it.userId == userId && it.project == project }) return true
         state = state.copy(grants = state.grants + PersistedGrant(userId, project))
         persist()
+        return true
     }
 
     fun projectsFor(user: PersistedUser): List<String> {

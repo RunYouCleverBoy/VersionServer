@@ -22,7 +22,10 @@ class AuthenticationTest {
             setBody(LoginRequest(userId = "admin", password = "admin-pass"))
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.body<LoginResponse>().token.isNotBlank())
+        val body = response.body<LoginResponse>()
+        assertTrue(body.token.isJwtFormat())
+        assertEquals("admin", body.userId)
+        assertEquals(Role.Admin, body.role)
     }
 
     @Test
@@ -33,7 +36,10 @@ class AuthenticationTest {
             setBody(LoginRequest(userId = "alice", password = "alice-pass"))
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.body<LoginResponse>().token.isNotBlank())
+        val body = response.body<LoginResponse>()
+        assertTrue(body.token.isJwtFormat())
+        assertEquals("alice", body.userId)
+        assertEquals(Role.Client, body.role)
     }
 
     @Test

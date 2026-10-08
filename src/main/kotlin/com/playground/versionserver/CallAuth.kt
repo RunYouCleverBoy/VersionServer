@@ -6,15 +6,21 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.header
 import io.ktor.server.response.respond
 
-suspend fun ApplicationCall.requireUser(
-    tokens: TokenService,
-    database: JsonDatabase,
-): PersistedUser? {
-    val header = request.header(HttpHeaders.Authorization)
-    val token = header
+fun ApplicationCall.jwtFromRequest(cookieName: String): String? {
+    val bearer = request.header(HttpHeaders.Authorization)
         ?.takeIf { it.startsWith("Bearer ") }
         ?.removePrefix("Bearer ")
         ?.ifBlank { null }
+    if (bearer != null) return bearer
+    return request.cookies[cookieName]?.ifBlank { null }
+}
+
+suspend fun ApplicationCall.requireUser(
+    tokens: JwtTokenService,
+    database: JsonDatabase,
+    cookieName: String,
+): PersistedUser? {
+    val token = jwtFromRequest(cookieName)
     if (token == null) {
         respond(HttpStatusCode.Unauthorized)
         return null
@@ -33,10 +39,11 @@ suspend fun ApplicationCall.requireUser(
 }
 
 suspend fun ApplicationCall.requireAdmin(
-    tokens: TokenService,
+    tokens: JwtTokenService,
     database: JsonDatabase,
+    cookieName: String,
 ): PersistedUser? {
-    val user = requireUser(tokens, database) ?: return null
+    val user = requireUser(tokens, database, cookieName) ?: return null
     if (user.role != Role.Admin) {
         respond(HttpStatusCode.Forbidden)
         return null
@@ -45,11 +52,12 @@ suspend fun ApplicationCall.requireAdmin(
 }
 
 suspend fun ApplicationCall.requireProjectAccess(
-    tokens: TokenService,
+    tokens: JwtTokenService,
     database: JsonDatabase,
+    cookieName: String,
     project: String,
 ): PersistedUser? {
-    val user = requireUser(tokens, database) ?: return null
+    val user = requireUser(tokens, database, cookieName) ?: return null
     if (!database.isAuthorized(user, project)) {
         respond(HttpStatusCode.Forbidden)
         return null
