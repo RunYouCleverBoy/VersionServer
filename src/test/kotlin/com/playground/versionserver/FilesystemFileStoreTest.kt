@@ -56,4 +56,20 @@ class FilesystemFileStoreTest {
         storeA.store(project = "alpha", version = "1.0", fileName = "app.bin", bytes = byteArrayOf(9))
         assertNull(storeB.read(project = "alpha", version = "1.0", fileName = "app.bin"))
     }
+
+    @Test
+    fun `nested relative paths under a version are stored and listed`() {
+        val store = FilesystemFileStore(Files.createTempDirectory("vs-fs"))
+        store.store(project = "alpha", version = "1.0", fileName = "lib/util.bin", bytes = byteArrayOf(4))
+        store.store(project = "alpha", version = "1.0", fileName = "app.bin", bytes = byteArrayOf(5))
+        assertContentEquals(byteArrayOf(4), store.read(project = "alpha", version = "1.0", fileName = "lib/util.bin"))
+        assertEquals(listOf("app.bin", "lib/util.bin"), store.list(project = "alpha", version = "1.0").sorted())
+    }
+
+    @Test
+    fun `path traversal in a file name is rejected`() {
+        val store = FilesystemFileStore(Files.createTempDirectory("vs-fs"))
+        assertEquals(false, store.store(project = "alpha", version = "1.0", fileName = "../escape.bin", bytes = byteArrayOf(1)))
+        assertNull(store.read(project = "alpha", version = "1.0", fileName = "../escape.bin"))
+    }
 }

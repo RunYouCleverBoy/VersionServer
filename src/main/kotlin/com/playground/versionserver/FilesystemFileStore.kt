@@ -3,9 +3,10 @@ package com.playground.versionserver
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
-import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readBytes
+import kotlin.io.path.relativeTo
 import kotlin.io.path.writeBytes
+import kotlin.streams.asSequence
 
 class FilesystemFileStore(private val root: Path) : FileStore {
     override fun store(project: String, version: String, fileName: String, bytes: ByteArray): Boolean {
@@ -24,9 +25,12 @@ class FilesystemFileStore(private val root: Path) : FileStore {
     override fun list(project: String, version: String): List<String> {
         val directory = directoryFor(project, version) ?: return emptyList()
         if (!directory.exists()) return emptyList()
-        return directory.listDirectoryEntries()
-            .filter { Files.isRegularFile(it) }
-            .map { it.fileName.toString() }
+        return Files.walk(directory).use { stream ->
+            stream.asSequence()
+                .filter { Files.isRegularFile(it) }
+                .map { it.relativeTo(directory).toString().replace('\\', '/') }
+                .toList()
+        }
     }
 
     override fun delete(project: String, version: String, fileName: String) {
@@ -37,18 +41,29 @@ class FilesystemFileStore(private val root: Path) : FileStore {
     private fun directoryFor(project: String, version: String): Path? {
         val safeProject = safeSegment(project) ?: return null
         val safeVersion = safeSegment(version) ?: return null
-        return root.resolve(safeProject).resolve(safeVersion)
+        return root.resolve(safeProject).resolve(safeVersion).normalize()
     }
 
     private fun pathFor(project: String, version: String, fileName: String): Path? {
         val directory = directoryFor(project, version) ?: return null
-        val safeFile = safeSegment(fileName) ?: return null
-        return directory.resolve(safeFile)
+        val relative = safeRelativePath(fileName) ?: return null
+        val resolved = directory.resolve(relative).normalize()
+        if (!resolved.startsWith(directory)) return null
+        return resolved
     }
 
     private fun safeSegment(value: String): String? {
         if (value.isEmpty() || value == "." || value == "..") return null
         if (value.contains('/') || value.contains('\\')) return null
         return value
+    }
+
+    private fun safeRelativePath(value: String): String? {
+        if (value.isBlank()) return null
+        val normalized = value.replace('\\', '/').trim('/')
+        if (normalized.isEmpty()) return null
+        val segments = normalized.split('/')
+        if (segments.any { it.isEmpty() || it == "." || it == ".." }) return null
+        return segments.joinToString("/")
     }
 }
