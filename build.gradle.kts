@@ -19,9 +19,16 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt")
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation("org.jetbrains:markdown:0.7.3")
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("io.ktor:ktor-client-content-negotiation")
     testImplementation(kotlin("test"))
+}
+
+tasks.processResources {
+    from("docs") {
+        into("doc-content")
+    }
 }
 
 kotlin {

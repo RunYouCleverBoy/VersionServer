@@ -52,6 +52,8 @@ fun Application.module(
             default("index.html")
         }
 
+        documentationRoutes()
+
         post("/login") {
             val request = call.receive<LoginRequest>()
             val user = database.authenticate(request.userId, request.password)
