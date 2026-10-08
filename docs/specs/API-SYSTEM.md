@@ -34,6 +34,7 @@ Provide a JWT-authenticated HTTP API for publishing and retrieving versioned pro
 - Failure returns `401` and no token/cookie.
 - Anyone may `POST /logout` to clear the auth cookie (`204`).
 - Cookie-only requests (no `Authorization` header) authenticate when the cookie JWT verifies.
+- `GET /projects` includes the authenticated caller’s user id and role alongside the project list.
 - Any authenticated user may `POST /password` with current and new password.
 - Wrong current password yields `401`; empty new password yields `400`.
 - After change, login accepts only the new password; the change persists across restart.
@@ -59,6 +60,7 @@ Provide a JWT-authenticated HTTP API for publishing and retrieving versioned pro
 - Admin may upload a multipart file to a project/version (filename may be nested relative path).
 - Authorized caller may list and download files for a project/version.
 - Admin may delete a file; afterward list/download treat it as absent (`404` on download).
+- Admin may delete a whole version; afterward it disappears from version lists and its files are absent.
 
 ## Error model
 

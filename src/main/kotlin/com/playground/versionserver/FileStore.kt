@@ -12,4 +12,6 @@ interface FileStore {
     fun list(project: String, version: String): List<String>
 
     fun delete(project: String, version: String, fileName: String)
+
+    fun deleteVersion(project: String, version: String)
 }

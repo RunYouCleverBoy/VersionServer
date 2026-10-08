@@ -22,6 +22,7 @@
     versionLabel: document.getElementById("version-label"),
     fileList: document.getElementById("file-list"),
     adminGrant: document.getElementById("admin-grant"),
+    adminEnroll: document.getElementById("admin-enroll"),
     adminUsers: document.getElementById("admin-users"),
     adminUpload: document.getElementById("admin-upload"),
     grantForm: document.getElementById("grant-form"),
@@ -38,10 +39,23 @@
     passwordForm: document.getElementById("password-form"),
     signOut: document.getElementById("sign-out"),
     toast: document.getElementById("toast"),
+    railCards: [...document.querySelectorAll('[data-accordion="rail"]')],
   };
 
   function isAdmin() {
     return state.role === "Admin";
+  }
+
+  function isSignedIn() {
+    return Boolean(state.userId);
+  }
+
+  function clearSession() {
+    state.token = null;
+    state.userId = null;
+    state.role = null;
+    state.project = null;
+    state.version = null;
   }
 
   function showToast(message) {
@@ -76,6 +90,11 @@
       body: options.json !== undefined ? JSON.stringify(options.json) : options.body,
     });
     if (!response.ok) {
+      if (response.status === 401 && path !== "/login") {
+        clearSession();
+        clearPending();
+        renderSession();
+      }
       const text = await response.text();
       throw new Error(text || `${response.status} ${response.statusText}`);
     }
@@ -89,18 +108,28 @@
     return response;
   }
 
+  function closeRailCards() {
+    for (const card of els.railCards) {
+      card.open = false;
+    }
+  }
+
   function renderSession() {
-    const signedIn = Boolean(state.token);
+    const signedIn = isSignedIn();
     els.loginView.hidden = signedIn;
     els.workspaceView.hidden = !signedIn;
     els.session.hidden = !signedIn;
     if (signedIn) {
       els.session.textContent = `${state.userId} · ${state.role}`;
     }
+    els.adminEnroll.hidden = !isAdmin();
     els.adminGrant.hidden = !isAdmin();
     els.adminUsers.hidden = !isAdmin();
     els.adminUpload.hidden = !isAdmin();
     els.accountBox.hidden = !signedIn;
+    if (!signedIn) {
+      closeRailCards();
+    }
   }
 
   function renderUsers(users) {
@@ -248,6 +277,11 @@
     els.versionList.replaceChildren();
     for (const version of versions) {
       const item = document.createElement("li");
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.gap = "0.5rem";
+      row.style.alignItems = "center";
+
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = version;
@@ -255,7 +289,32 @@
         button.classList.add("active");
       }
       button.addEventListener("click", () => openVersion(version));
-      item.append(button);
+      row.append(button);
+
+      if (isAdmin()) {
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "danger";
+        del.textContent = "Delete";
+        del.addEventListener("click", async () => {
+          if (!window.confirm(`Delete version ${version} and all of its files?`)) {
+            return;
+          }
+          await api(
+            `/projects/${encodeURIComponent(state.project)}/versions/${encodeURIComponent(version)}`,
+            { method: "DELETE" },
+          );
+          showToast(`Deleted version ${version}`);
+          if (state.version === version) {
+            state.version = null;
+            renderFiles([]);
+          }
+          await openProject(state.project);
+        });
+        row.append(del);
+      }
+
+      item.append(row);
       els.versionList.append(item);
     }
   }
@@ -317,6 +376,9 @@
 
   async function refreshProjects() {
     const data = await api("/projects");
+    state.userId = data.userId;
+    state.role = data.role;
+    renderSession();
     renderProjects(data.projects);
   }
 
@@ -374,6 +436,17 @@
     await openVersion(version);
   }
 
+  async function enterWorkspace(token = null) {
+    state.token = token;
+    state.project = null;
+    state.version = null;
+    clearPending();
+    els.emptyState.hidden = false;
+    els.projectDetail.hidden = true;
+    await refreshProjects();
+    await refreshUsers();
+  }
+
   els.loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     els.loginError.hidden = true;
@@ -385,17 +458,8 @@
           password: document.getElementById("password").value,
         },
       });
-      state.token = data.token;
-      state.userId = data.userId;
-      state.role = data.role;
-      state.project = null;
-      state.version = null;
-      clearPending();
-      renderSession();
-      els.emptyState.hidden = false;
-      els.projectDetail.hidden = true;
-      await refreshProjects();
-      await refreshUsers();
+      // Cookie holds the JWT; GET /projects establishes the signed-in UI.
+      await enterWorkspace(data.token);
     } catch (error) {
       els.loginError.textContent = "Sign-in failed. Check user id and password.";
       els.loginError.hidden = false;
@@ -408,11 +472,7 @@
     } catch (_error) {
       // Local sign-out still proceeds if logout fails.
     }
-    state.token = null;
-    state.userId = null;
-    state.role = null;
-    state.project = null;
-    state.version = null;
+    clearSession();
     clearPending();
     els.loginForm.reset();
     els.passwordForm.reset();
@@ -528,5 +588,27 @@
     els.uploadFolder.value = "";
   });
 
-  renderSession();
+  for (const card of els.railCards) {
+    card.addEventListener("toggle", () => {
+      if (!card.open) {
+        return;
+      }
+      for (const other of els.railCards) {
+        if (other !== card) {
+          other.open = false;
+        }
+      }
+    });
+  }
+
+  async function bootstrap() {
+    try {
+      // Cookie JWT + the same projects fetch used after login.
+      await enterWorkspace();
+    } catch (_error) {
+      renderSession();
+    }
+  }
+
+  bootstrap();
 })();

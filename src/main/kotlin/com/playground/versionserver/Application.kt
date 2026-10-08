@@ -104,7 +104,13 @@ fun Application.module(
 
         get("/projects") {
             val user = call.requireUser(tokens, database, cookieName) ?: return@get
-            call.respond(ProjectListResponse(projects = database.projectsFor(user)))
+            call.respond(
+                ProjectListResponse(
+                    userId = user.id,
+                    role = user.role,
+                    projects = database.projectsFor(user),
+                ),
+            )
         }
 
         get("/users") {
@@ -241,6 +247,19 @@ fun Application.module(
             }
             fileStore.delete(project, version, fileName)
             database.removeArtifact(project, version, fileName)
+            call.respond(HttpStatusCode.NoContent)
+        }
+
+        delete("/projects/{project}/versions/{version}") {
+            call.requireAdmin(tokens, database, cookieName) ?: return@delete
+            val project = call.parameters["project"]
+            val version = call.parameters["version"]
+            if (project.isNullOrBlank() || version.isNullOrBlank()) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@delete
+            }
+            fileStore.deleteVersion(project, version)
+            database.removeVersion(project, version)
             call.respond(HttpStatusCode.NoContent)
         }
     }

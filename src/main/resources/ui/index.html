@@ -40,8 +40,8 @@
       <aside class="rail">
         <h2>Projects</h2>
         <ul id="project-list" class="menu"></ul>
-        <div id="admin-users" class="admin-box" hidden>
-          <h3>Enroll user</h3>
+        <details id="admin-enroll" class="rail-card" data-accordion="rail" hidden>
+          <summary>Enroll user</summary>
           <form id="enroll-form" class="stack compact">
             <label>
               User id
@@ -60,11 +60,13 @@
             </label>
             <button type="submit">Enroll</button>
           </form>
-          <h3>Users</h3>
+        </details>
+        <details id="admin-users" class="rail-card" data-accordion="rail" hidden>
+          <summary>Users</summary>
           <ul id="user-list" class="menu"></ul>
-        </div>
-        <div id="admin-grant" class="admin-box" hidden>
-          <h3>Grant access</h3>
+        </details>
+        <details id="admin-grant" class="rail-card" data-accordion="rail" hidden>
+          <summary>Grant access</summary>
           <form id="grant-form" class="stack compact">
             <label>
               Project
@@ -76,9 +78,9 @@
             </label>
             <button type="submit">Authorize</button>
           </form>
-        </div>
-        <div id="account-box" class="admin-box" hidden>
-          <h3>Change password</h3>
+        </details>
+        <details id="account-box" class="rail-card" data-accordion="rail" hidden>
+          <summary>Change password</summary>
           <form id="password-form" class="stack compact">
             <label>
               Current password
@@ -90,7 +92,7 @@
             </label>
             <button type="submit">Update password</button>
           </form>
-        </div>
+        </details>
         <button id="sign-out" type="button" class="ghost">Sign out</button>
       </aside>
 

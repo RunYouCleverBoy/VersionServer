@@ -113,6 +113,13 @@ class JsonDatabase(private val path: Path) {
         return existing
     }
 
+    fun removeVersion(project: String, version: String) {
+        val remaining = state.artifacts.filterNot { it.project == project && it.version == version }
+        if (remaining.size == state.artifacts.size) return
+        state = state.copy(artifacts = remaining)
+        persist()
+    }
+
     private fun loadOrSeed(): PersistedState {
         val text = if (path.exists()) path.readText() else ""
         val loaded = if (text.isBlank()) {

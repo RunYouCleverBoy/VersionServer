@@ -166,14 +166,16 @@ Enrolls a new user.
 
 ### `GET /projects`
 
-Requires token.
+Requires JWT (Bearer or cookie).
 
-Returns projects visible to the caller (all projects for Admin; granted projects for Client).
+Returns the caller’s identity plus projects visible to them (all projects for Admin; granted projects for Client). The web client uses a successful response as “signed in.”
 
 **Response** `200 OK`:
 
 ```json
 {
+  "userId": "alice",
+  "role": "Client",
   "projects": ["alpha", "beta"]
 }
 ```
@@ -270,6 +272,18 @@ Downloads file bytes. `{fileName...}` may include `/` for nested paths (e.g. `li
 Requires **Admin**.
 
 Deletes the file from storage and metadata.
+
+**Response:** `204 No Content`
+
+**Errors:** `401`, `403`, `400`.
+
+---
+
+### `DELETE /projects/{project}/versions/{version}`
+
+Requires **Admin**.
+
+Deletes the entire version: all files under it in storage, and all artifact metadata for that project/version. Idempotent if the version is already absent.
 
 **Response:** `204 No Content`
 

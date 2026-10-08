@@ -1,6 +1,7 @@
 package com.playground.versionserver
 
 import io.ktor.client.call.body
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -11,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.setCookie
+import io.ktor.serialization.kotlinx.json.json
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.createTempFile
 import kotlin.test.Test
@@ -41,7 +43,10 @@ class JwtAuthenticationTest {
         // HttpCookies plugin keeps VS_TOKEN; no Bearer header set here.
         val list = client.get("/projects")
         assertEquals(HttpStatusCode.OK, list.status)
-        assertEquals(emptyList(), list.body<ProjectListResponse>().projects)
+        val body = list.body<ProjectListResponse>()
+        assertEquals("admin", body.userId)
+        assertEquals(Role.Admin, body.role)
+        assertEquals(emptyList(), body.projects)
     }
 
     @Test
@@ -58,7 +63,11 @@ class JwtAuthenticationTest {
         val client = jsonHttpClient()
         val jwt = client.login("admin", "admin-pass")
         val tampered = jwt.dropLast(1) + if (jwt.last() == 'a') 'b' else 'a'
-        val response = client.get("/projects") {
+        // Cookie-less client so a still-valid VS_TOKEN cannot mask Bearer rejection.
+        val bare = createClient {
+            install(ContentNegotiation) { json() }
+        }
+        val response = bare.get("/projects") {
             header(HttpHeaders.Authorization, "Bearer $tampered")
         }
         assertEquals(HttpStatusCode.Unauthorized, response.status)

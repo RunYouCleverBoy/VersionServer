@@ -21,10 +21,12 @@ Anonymous users may load the client. All data operations go through the HTTP API
 ## Session
 
 1. Sign-in form calls `POST /login`.
-2. On success, the server sets an `HttpOnly` cookie with the JWT; the client also keeps JWT, user id, and role in memory (page lifetime) for UI state and optional Bearer headers.
-3. Subsequent API calls use `credentials: "same-origin"` so the cookie JWT is sent; when memory has a token, they also send `Authorization: Bearer <jwt>`.
-4. Sign-out calls `POST /logout` to clear the cookie, clears local state, and returns to the login view.
-5. Admin-only UI sections are shown only when `role === "Admin"`.
+2. On success, the server sets an `HttpOnly` cookie with the JWT. Auth for the web client is that cookie.
+3. Subsequent API calls use `credentials: "same-origin"` so the cookie JWT is sent on every request.
+4. On page load (and after login), the client calls `GET /projects`. If the cookie JWT is valid, identity + projects come back and the user is treated as signed in. If not (`401`), show the login view.
+5. Sign-out calls `POST /logout` to clear the cookie and returns to the login view.
+6. Admin-only UI sections are shown only when `role === "Admin"`.
+7. Enroll user, Users, Grant access, and Change password are collapsed accordion cards in the rail; at most one of those cards is open at a time.
 
 ## Client capabilities
 
@@ -46,7 +48,8 @@ Anonymous users may load the client. All data operations go through the HTTP API
   - “Choose files”,
   - “Choose folder”.
   Folder structure is preserved as relative paths under the version. Upload each pending file via multipart `POST .../files`.
-- **Delete:** per-file delete control calling `DELETE .../files/{path}`.
+- **Delete file:** per-file delete control calling `DELETE .../files/{path}`.
+- **Delete version:** per-version delete control calling `DELETE .../versions/{version}` (confirms first).
 
 ## UI invariants
 
@@ -58,7 +61,6 @@ Anonymous users may load the client. All data operations go through the HTTP API
 
 ## Non-goals (client)
 
-- Remembering tokens across browser restarts
 - Offline mode
 - Editing passwords or deleting users
 - Revoking grants from the UI

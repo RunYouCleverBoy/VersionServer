@@ -38,6 +38,14 @@ class FilesystemFileStore(private val root: Path) : FileStore {
         Files.deleteIfExists(path)
     }
 
+    override fun deleteVersion(project: String, version: String) {
+        val directory = directoryFor(project, version) ?: return
+        if (!directory.exists()) return
+        Files.walk(directory).use { stream ->
+            stream.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
+        }
+    }
+
     private fun directoryFor(project: String, version: String): Path? {
         val safeProject = safeSegment(project) ?: return null
         val safeVersion = safeSegment(version) ?: return null

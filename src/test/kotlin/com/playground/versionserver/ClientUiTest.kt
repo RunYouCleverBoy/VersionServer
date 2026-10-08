@@ -6,6 +6,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ClientUiTest {
@@ -101,21 +102,26 @@ class ClientUiTest {
     fun `web client gates admin controls and encodes nested file paths`() = withVersionServer {
         val script = client.get("/ui/app.js").bodyAsText()
         assertTrue(script.contains("function isAdmin()"))
+        assertTrue(script.contains("els.adminEnroll.hidden = !isAdmin()"))
         assertTrue(script.contains("els.adminGrant.hidden = !isAdmin()"))
         assertTrue(script.contains("els.adminUsers.hidden = !isAdmin()"))
         assertTrue(script.contains("els.adminUpload.hidden = !isAdmin()"))
+        assertTrue(script.contains("data-accordion"))
+        assertTrue(script.contains("other.open = false"))
         assertTrue(script.contains("encodeURIComponent(segment)"))
-        assertTrue(script.contains("Authorization"))
-        assertTrue(script.contains("Bearer"))
         assertTrue(script.contains("credentials"))
+        assertTrue(script.contains("enterWorkspace"))
         assertTrue(script.contains("/logout"))
         assertTrue(script.contains("method: \"POST\""))
-        assertTrue(script.contains("state.token = null"))
+        assertTrue(script.contains("clearSession"))
         assertTrue(script.contains("showToast"))
+        assertFalse(script.contains("localStorage"))
         assertTrue(script.contains("pick-files") || script.contains("pickFiles"))
         assertTrue(script.contains("pick-folder") || script.contains("pickFolder"))
         assertTrue(script.contains("grant-form") || script.contains("grantForm"))
         assertTrue(script.contains("User must exist") || script.contains("Grant failed"))
+        assertTrue(script.contains("/versions/") && script.contains("DELETE"))
+        assertTrue(script.contains("Delete version") || script.contains("Deleted version"))
     }
 
     @Test
@@ -126,5 +132,10 @@ class ClientUiTest {
         assertTrue(html.contains("account-box"))
         assertTrue(html.contains("admin-upload"))
         assertTrue(html.contains("Choose files"))
+        assertTrue(html.contains("data-accordion=\"rail\""))
+        assertTrue(html.contains("<details id=\"admin-enroll\""))
+        assertTrue(html.contains("<details id=\"admin-users\""))
+        assertTrue(html.contains("<details id=\"admin-grant\""))
+        assertTrue(html.contains("<details id=\"account-box\""))
     }
 }

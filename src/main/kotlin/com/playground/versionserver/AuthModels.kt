@@ -58,6 +58,8 @@ data class UserListResponse(
 
 @Serializable
 data class ProjectListResponse(
+    val userId: String,
+    val role: Role,
     val projects: List<String>,
 )
 

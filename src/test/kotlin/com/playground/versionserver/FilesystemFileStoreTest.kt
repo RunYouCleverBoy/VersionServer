@@ -72,4 +72,17 @@ class FilesystemFileStoreTest {
         assertEquals(false, store.store(project = "alpha", version = "1.0", fileName = "../escape.bin", bytes = byteArrayOf(1)))
         assertNull(store.read(project = "alpha", version = "1.0", fileName = "../escape.bin"))
     }
+
+    @Test
+    fun `deleting a version removes all of its files`() {
+        val store = FilesystemFileStore(Files.createTempDirectory("vs-fs"))
+        store.store(project = "alpha", version = "1.0", fileName = "app.bin", bytes = byteArrayOf(1))
+        store.store(project = "alpha", version = "1.0", fileName = "lib/util.bin", bytes = byteArrayOf(2))
+        store.store(project = "alpha", version = "2.0", fileName = "app.bin", bytes = byteArrayOf(3))
+        store.deleteVersion(project = "alpha", version = "1.0")
+        assertNull(store.read(project = "alpha", version = "1.0", fileName = "app.bin"))
+        assertNull(store.read(project = "alpha", version = "1.0", fileName = "lib/util.bin"))
+        assertEquals(emptyList(), store.list(project = "alpha", version = "1.0"))
+        assertContentEquals(byteArrayOf(3), store.read(project = "alpha", version = "2.0", fileName = "app.bin"))
+    }
 }

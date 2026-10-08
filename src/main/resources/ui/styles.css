@@ -70,7 +70,8 @@ body {
 
 .panel,
 .workspace,
-.admin-box {
+.admin-box,
+.rail-card {
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -211,6 +212,58 @@ button.ghost {
 
 .admin-box {
   padding: 0.9rem;
+}
+
+.rail-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.rail-card summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.75rem 0.9rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.rail-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.rail-card summary::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+  flex: 0 0 auto;
+}
+
+.rail-card[open] summary {
+  border-bottom: 1px solid var(--line);
+  color: var(--accent-ink);
+}
+
+.rail-card[open] summary::after {
+  transform: rotate(-135deg);
+  border-color: var(--accent);
+}
+
+.rail-card > :not(summary) {
+  padding: 0.85rem 0.9rem 0.95rem;
+}
+
+.rail-card .menu {
+  margin: 0;
 }
 
 .drop-zone {
