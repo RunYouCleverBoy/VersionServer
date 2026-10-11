@@ -46,3 +46,4 @@ bin/
 
 ### Runtime data ###
 data/
+logs/

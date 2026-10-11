@@ -34,6 +34,7 @@ Defaults are relative to the process working directory (`data/` is not checked i
 |-------|---------|----------|
 | JSON database | `data/store.json` (`VERSION_SERVER_JSON`) | Users, grants, artifact metadata |
 | File storage root | `data/files` (`VERSION_SERVER_STORAGE`) | Versioned file bytes at `{project}/{version}/{file...}` |
+| Logs | `logs/` (`VERSION_SERVER_LOG_DIR`) | Rolling server + upload/client diagnostics (`versionserver.log`) |
 
 If the JSON database path is missing, blank, or has no users, the server writes a default database with the seeded accounts before serving requests.
 

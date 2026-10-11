@@ -8,9 +8,14 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.http.content.staticResources
+import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondRedirect
@@ -20,8 +25,15 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.readRemaining
+import java.io.IOException
 import java.time.Instant
 import kotlinx.io.readByteArray
+import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
+
+private val appLog = LoggerFactory.getLogger("com.playground.versionserver.Application")
+private val uploadLog = LoggerFactory.getLogger("com.playground.versionserver.upload")
+private val clientLog = LoggerFactory.getLogger("com.playground.versionserver.client")
 
 fun Application.module(
     config: AppConfig,
@@ -36,11 +48,58 @@ fun Application.module(
     )
     val cookieName = config.jwtCookieName
 
+    install(CallLogging) {
+        level = Level.INFO
+        format { call ->
+            val status = call.response.status()?.value
+            "${call.request.httpMethod.value} ${call.request.path()} -> $status"
+        }
+    }
+
+    install(StatusPages) {
+        exception<IOException> { call, cause ->
+            if (cause.isMultipartSizeLimit()) {
+                appLog.warn(
+                    "multipart too large {} {} : {}",
+                    call.request.httpMethod.value,
+                    call.request.path(),
+                    cause.message,
+                )
+                call.respond(HttpStatusCode.PayloadTooLarge)
+                return@exception
+            }
+            appLog.error(
+                "unhandled {} {} : {}",
+                call.request.httpMethod.value,
+                call.request.path(),
+                cause.toString(),
+                cause,
+            )
+            call.respond(HttpStatusCode.InternalServerError)
+        }
+        exception<Throwable> { call, cause ->
+            appLog.error(
+                "unhandled {} {} : {}",
+                call.request.httpMethod.value,
+                call.request.path(),
+                cause.toString(),
+                cause,
+            )
+            call.respond(HttpStatusCode.InternalServerError)
+        }
+    }
+
     install(ContentNegotiation) {
         json()
     }
 
     routing {
+        post("/client-log") {
+            val body = call.receiveText().take(8_192)
+            clientLog.info(body)
+            call.respond(HttpStatusCode.NoContent)
+        }
+
         get("/") {
             call.respondRedirect("/ui/")
         }
@@ -180,29 +239,97 @@ fun Application.module(
             val project = call.parameters["project"]
             val version = call.parameters["version"]
             if (project.isNullOrBlank() || version.isNullOrBlank()) {
+                uploadLog.warn("upload rejected: blank project/version project={} version={}", project, version)
                 call.respond(HttpStatusCode.BadRequest)
                 return@post
             }
             var fileName: String? = null
             var bytes: ByteArray? = null
-            call.receiveMultipart().forEachPart { part ->
-                if (part is PartData.FileItem) {
-                    fileName = part.originalFileName
-                    bytes = part.provider().readRemaining().readByteArray()
+            var partCount = 0
+            try {
+                call.receiveMultipart(formFieldLimit = config.multipartFormFieldLimitBytes).forEachPart { part ->
+                    partCount += 1
+                    when (part) {
+                        is PartData.FileItem -> {
+                            uploadLog.info(
+                                "upload part file project={} version={} partName={} originalFileName={} contentType={} disposition={}",
+                                project,
+                                version,
+                                part.name,
+                                part.originalFileName,
+                                part.contentType,
+                                part.headers["Content-Disposition"],
+                            )
+                            fileName = part.originalFileName
+                            bytes = part.provider().readRemaining().readByteArray()
+                        }
+                        is PartData.FormItem -> {
+                            uploadLog.info(
+                                "upload part form project={} version={} partName={} value={}",
+                                project,
+                                version,
+                                part.name,
+                                part.value.take(256),
+                            )
+                        }
+                        else -> {
+                            uploadLog.info(
+                                "upload part other project={} version={} type={} partName={}",
+                                project,
+                                version,
+                                part::class.simpleName,
+                                part.name,
+                            )
+                        }
+                    }
+                    part.release()
                 }
-                part.release()
+            } catch (error: IOException) {
+                if (error.isMultipartSizeLimit()) {
+                    uploadLog.warn(
+                        "upload rejected: multipart limit project={} version={} limitBytes={} error={}",
+                        project,
+                        version,
+                        config.multipartFormFieldLimitBytes,
+                        error.message,
+                    )
+                    call.respond(HttpStatusCode.PayloadTooLarge)
+                    return@post
+                }
+                throw error
             }
             val storedName = fileName
             val storedBytes = bytes
             if (storedName.isNullOrBlank() || storedBytes == null) {
+                uploadLog.warn(
+                    "upload rejected: missing file part project={} version={} parts={} fileName={}",
+                    project,
+                    version,
+                    partCount,
+                    storedName,
+                )
                 call.respond(HttpStatusCode.BadRequest)
                 return@post
             }
             if (!fileStore.store(project, version, storedName, storedBytes)) {
+                uploadLog.warn(
+                    "upload rejected: store failed project={} version={} fileName={} bytes={}",
+                    project,
+                    version,
+                    storedName,
+                    storedBytes.size,
+                )
                 call.respond(HttpStatusCode.BadRequest)
                 return@post
             }
             database.addArtifact(project, version, storedName)
+            uploadLog.info(
+                "upload ok project={} version={} fileName={} bytes={}",
+                project,
+                version,
+                storedName,
+                storedBytes.size,
+            )
             call.respond(HttpStatusCode.Created)
         }
 
@@ -274,3 +401,6 @@ fun Application.module(
         }
     }
 }
+
+private fun IOException.isMultipartSizeLimit(): Boolean =
+    message?.contains("Limit of") == true && message?.contains("bytes exceeded") == true

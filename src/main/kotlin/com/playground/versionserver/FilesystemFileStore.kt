@@ -7,12 +7,25 @@ import kotlin.io.path.readBytes
 import kotlin.io.path.relativeTo
 import kotlin.io.path.writeBytes
 import kotlin.streams.asSequence
+import org.slf4j.LoggerFactory
 
 class FilesystemFileStore(private val root: Path) : FileStore {
+    private val log = LoggerFactory.getLogger(FilesystemFileStore::class.java)
+
     override fun store(project: String, version: String, fileName: String, bytes: ByteArray): Boolean {
-        val path = pathFor(project, version, fileName) ?: return false
+        val path = pathFor(project, version, fileName)
+        if (path == null) {
+            log.warn(
+                "store rejected unsafe path project={} version={} fileName={}",
+                project,
+                version,
+                fileName,
+            )
+            return false
+        }
         Files.createDirectories(path.parent)
         path.writeBytes(bytes)
+        log.debug("stored project={} version={} fileName={} path={}", project, version, fileName, path)
         return true
     }
 

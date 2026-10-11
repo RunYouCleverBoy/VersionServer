@@ -75,6 +75,20 @@
     return `/projects/${encodeURIComponent(project)}/versions/${encodeURIComponent(version)}/files/${nested}`;
   }
 
+  function clientLog(event, detail = {}) {
+    const payload = JSON.stringify({
+      event,
+      detail,
+      at: new Date().toISOString(),
+    });
+    fetch("/client-log", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    }).catch(() => {});
+  }
+
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {});
     if (state.token) {
@@ -96,6 +110,11 @@
         renderSession();
       }
       const text = await response.text();
+      clientLog("api.error", {
+        path,
+        status: String(response.status),
+        body: text.slice(0, 500),
+      });
       throw new Error(text || `${response.status} ${response.statusText}`);
     }
     if (response.status === 204) {
@@ -442,13 +461,32 @@
       showToast("Drop or choose files first.");
       return;
     }
+    clientLog("upload.batch", {
+      project: state.project,
+      version,
+      count: String(state.pending.length),
+      paths: state.pending.map((item) => item.relativePath).join("|"),
+    });
     for (const item of state.pending) {
+      clientLog("upload.start", {
+        project: state.project,
+        version,
+        relativePath: item.relativePath,
+        fileName: item.file.name,
+        webkitRelativePath: item.file.webkitRelativePath || "",
+        size: String(item.file.size),
+      });
       const body = new FormData();
       body.append("file", item.file, item.relativePath);
       await api(
         `/projects/${encodeURIComponent(state.project)}/versions/${encodeURIComponent(version)}/files`,
         { method: "POST", body },
       );
+      clientLog("upload.ok", {
+        project: state.project,
+        version,
+        relativePath: item.relativePath,
+      });
     }
     const count = state.pending.length;
     clearPending();

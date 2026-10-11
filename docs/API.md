@@ -317,8 +317,10 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 | `VERSION_SERVER_STORAGE` | `data/files` | Root directory for published file bytes (`{project}/{version}/...`) |
 | `VERSION_SERVER_JSON` | `data/store.json` | JSON database path (users, grants, artifact index; SHA-256 `passwordHash` only). Created with seeded users if missing or empty. |
 | `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs |
+| `VERSION_SERVER_LOG_DIR` | `logs` | Directory for rolling server logs (`versionserver.log`) |
+| `VERSION_SERVER_UPLOAD_MAX_BYTES` | `1073741824` (1 GiB) | Max size of a single multipart upload part. Oversize uploads return `413`. |
 
-Listen port: `8080` (set in `Main.kt`).
+Listen port: `8080` (set in `Main.kt`). Server and UI upload diagnostics also write to that log directory.
 
 ---
 
