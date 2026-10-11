@@ -1,0 +1,4 @@
+services:
+  version-server:
+    ports:
+      - "${VERSION_SERVER_HTTPS_PORT:-8443}:8443"

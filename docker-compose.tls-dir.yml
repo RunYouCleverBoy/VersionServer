@@ -1,0 +1,4 @@
+services:
+  version-server:
+    volumes:
+      - ${VERSION_SERVER_TLS_DIR}:/certs:ro

@@ -1,0 +1,35 @@
+name: version-server
+
+services:
+  version-server:
+    build: .
+    image: version-server:local
+    container_name: version-server
+    init: true
+    restart: unless-stopped
+    mem_limit: 3g
+    ports:
+      - "${VERSION_SERVER_PORT:-8080}:8080"
+    environment:
+      VERSION_SERVER_STORAGE: /var/lib/version-server/files
+      VERSION_SERVER_JSON: /var/lib/version-server/store.json
+      VERSION_SERVER_LOG_DIR: /var/lib/version-server/logs
+      VERSION_SERVER_JWT_SECRET: ${VERSION_SERVER_JWT_SECRET:?Set VERSION_SERVER_JWT_SECRET in .env}
+      VERSION_SERVER_UPLOAD_MAX_BYTES: ${VERSION_SERVER_UPLOAD_MAX_BYTES:-1073741824}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx2g}
+      VERSION_SERVER_TLS_CERT: ${VERSION_SERVER_TLS_CERT:-}
+      VERSION_SERVER_TLS_KEY: ${VERSION_SERVER_TLS_KEY:-}
+      VERSION_SERVER_TLS_KEY_PASSWORD: ${VERSION_SERVER_TLS_KEY_PASSWORD:-}
+      VERSION_SERVER_TLS_KEYSTORE: ${VERSION_SERVER_TLS_KEYSTORE:-}
+      VERSION_SERVER_TLS_KEYSTORE_PASSWORD: ${VERSION_SERVER_TLS_KEYSTORE_PASSWORD:-}
+      VERSION_SERVER_TLS_KEY_ALIAS: ${VERSION_SERVER_TLS_KEY_ALIAS:-}
+      VERSION_SERVER_HTTPS_PORT: ${VERSION_SERVER_HTTPS_PORT:-8443}
+    volumes:
+      # Empty VERSION_SERVER_DATA_DIR uses the named volume below.
+      # Set it to an absolute host path for a bind mount when Docker can share that path.
+      - ${VERSION_SERVER_DATA_DIR:-version-server-data}:/var/lib/version-server
+    stop_grace_period: 30s
+
+volumes:
+  version-server-data:
+    name: version-server-data

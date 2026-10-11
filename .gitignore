@@ -47,3 +47,16 @@ bin/
 ### Runtime data ###
 data/
 logs/
+
+### Docker ###
+.env
+
+### TLS material — create these yourself; never commit them ###
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+certs/

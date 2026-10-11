@@ -338,8 +338,15 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 | `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs |
 | `VERSION_SERVER_LOG_DIR` | `logs` | Directory for rolling server logs (`versionserver.log`) |
 | `VERSION_SERVER_UPLOAD_MAX_BYTES` | `1073741824` (1 GiB) | Max size of a single multipart upload part. Oversize uploads return `413`. |
+| `VERSION_SERVER_TLS_CERT` | unset | PEM certificate, or a path to a PEM, PKCS#12, or JKS file. A value containing `-----BEGIN` is the certificate text. |
+| `VERSION_SERVER_TLS_KEY` | unset | PEM private key, or a path to it. Required for a PEM certificate. |
+| `VERSION_SERVER_TLS_KEY_PASSWORD` | unset | Password for an encrypted PEM private key. |
+| `VERSION_SERVER_TLS_KEYSTORE` | unset | Path to a PKCS#12 or JKS keystore. Alternative to the PEM pair. |
+| `VERSION_SERVER_TLS_KEYSTORE_PASSWORD` | unset | Password for `VERSION_SERVER_TLS_KEYSTORE` or a `.p12` / `.jks` path in `VERSION_SERVER_TLS_CERT`. |
+| `VERSION_SERVER_TLS_KEY_ALIAS` | first key entry | Alias of the private key inside a keystore. |
+| `VERSION_SERVER_HTTPS_PORT` | `8443` | Port for HTTPS after a certificate is configured. |
 
-Listen port: `8080` (set in `Main.kt`). Server and UI upload diagnostics also write to that log directory.
+Listen port: `8080` for HTTP. HTTPS is off until a certificate is set; startup then logs how to create one. Do not commit certificate files or copy them into the Docker image. In Docker, set `VERSION_SERVER_TLS_DIR` to the host directory that should be mounted at `/certs`.
 
 ---
 

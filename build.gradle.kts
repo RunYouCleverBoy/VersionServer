@@ -42,6 +42,12 @@ application {
     mainClass.set("com.playground.versionserver.MainKt")
 }
 
+ktor {
+    fatJar {
+        archiveFileName.set("version-server.jar")
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
 }
