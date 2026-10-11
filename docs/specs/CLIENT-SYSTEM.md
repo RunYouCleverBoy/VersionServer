@@ -36,7 +36,7 @@ Anonymous users may load the client. All data operations go through the HTTP API
 - Change their own password via a form that posts `POST /password` (current + new).
 - List projects from `GET /projects` (filtered by server rules).
 - Select a project → list versions; show `(latest)` beside the latest version name.
-- Select a version → list files (with upload times); download a file (including nested paths).
+- Select a version → list files as a directory tree (with upload times); download an individual file, a directory (zip), or the whole version (zip).
 
 ### Admin-only
 
@@ -55,7 +55,7 @@ Anonymous users may load the client. All data operations go through the HTTP API
 
 1. Clients never see Admin enroll/grant/upload/delete controls.
 2. Asset URLs are rooted at `/ui/...` so styles/scripts load reliably.
-3. Nested file paths are encoded segment-by-segment for download/delete URLs.
+3. Nested file paths are encoded segment-by-segment for download/delete URLs. Directory and whole-version downloads use `GET .../archive` (optional `prefix`).
 4. Upload queue can hold multiple files; submitting uploads all pending items then clears the queue.
 5. Errors from enroll/grant/upload surface as user-visible toasts (or login error for sign-in).
 

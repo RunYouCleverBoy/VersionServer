@@ -21,6 +21,7 @@
     versionList: document.getElementById("version-list"),
     versionLabel: document.getElementById("version-label"),
     fileList: document.getElementById("file-list"),
+    downloadVersion: document.getElementById("download-version"),
     adminGrant: document.getElementById("admin-grant"),
     adminEnroll: document.getElementById("admin-enroll"),
     adminUsers: document.getElementById("admin-users"),
@@ -73,6 +74,49 @@
       .map((segment) => encodeURIComponent(segment))
       .join("/");
     return `/projects/${encodeURIComponent(project)}/versions/${encodeURIComponent(version)}/files/${nested}`;
+  }
+
+  function archiveUrl(project, version, prefix = "") {
+    const base = `/projects/${encodeURIComponent(project)}/versions/${encodeURIComponent(version)}/archive`;
+    if (!prefix) {
+      return base;
+    }
+    return `${base}?prefix=${encodeURIComponent(prefix)}`;
+  }
+
+  async function downloadBlob(path, downloadName) {
+    const response = await api(path);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = downloadName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildFileTree(files) {
+    const root = { dirs: new Map(), files: [] };
+    for (const file of files) {
+      const parts = file.name.split("/").filter(Boolean);
+      if (parts.length === 0) {
+        continue;
+      }
+      let node = root;
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        const part = parts[i];
+        if (!node.dirs.has(part)) {
+          node.dirs.set(part, { dirs: new Map(), files: [] });
+        }
+        node = node.dirs.get(part);
+      }
+      node.files.push({
+        name: parts[parts.length - 1],
+        path: file.name,
+        uploadedAt: file.uploadedAt,
+      });
+    }
+    return root;
   }
 
   function clientLog(event, detail = {}) {
@@ -355,41 +399,64 @@
     return date.toLocaleString();
   }
 
-  function renderFiles(files) {
-    els.fileList.replaceChildren();
-    els.versionLabel.textContent = state.version
-      ? `Version ${state.version}`
-      : "Pick a version.";
-    if (!state.version) {
-      return;
-    }
-    if (files.length === 0) {
+  function renderFileNode(parent, node, prefix) {
+    const dirNames = [...node.dirs.keys()].sort((a, b) => a.localeCompare(b));
+    for (const dirName of dirNames) {
+      const dirPrefix = prefix ? `${prefix}/${dirName}` : dirName;
       const item = document.createElement("li");
-      item.textContent = "No files in this version.";
-      els.fileList.append(item);
-      return;
-    }
-    for (const file of files) {
-      const fileName = file.name;
-      const item = document.createElement("li");
+      item.className = "file-tree-item";
+
       const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.gap = "0.5rem";
-      row.style.alignItems = "center";
+      row.className = "file-row";
+
+      const label = document.createElement("span");
+      label.className = "file-name";
+      label.textContent = `${dirName}/`;
+      row.append(label);
+
+      const download = document.createElement("button");
+      download.type = "button";
+      download.className = "ghost file-action";
+      download.textContent = "Download";
+      download.addEventListener("click", async () => {
+        try {
+          await downloadBlob(
+            archiveUrl(state.project, state.version, dirPrefix),
+            `${dirName}.zip`,
+          );
+          showToast(`Downloaded ${dirName}/`);
+        } catch (error) {
+          showToast(error.message || "Download failed.");
+        }
+      });
+      row.append(download);
+      item.append(row);
+
+      const children = document.createElement("ul");
+      children.className = "menu file-tree";
+      renderFileNode(children, node.dirs.get(dirName), dirPrefix);
+      item.append(children);
+      parent.append(item);
+    }
+
+    const files = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
+    for (const file of files) {
+      const item = document.createElement("li");
+      item.className = "file-tree-item";
+      const row = document.createElement("div");
+      row.className = "file-row";
 
       const link = document.createElement("a");
-      link.href = fileUrl(state.project, state.version, fileName);
-      link.textContent = fileName;
+      link.className = "file-name";
+      link.href = fileUrl(state.project, state.version, file.path);
+      link.textContent = file.name;
       link.addEventListener("click", async (event) => {
         event.preventDefault();
-        const response = await api(link.href);
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = fileName.split("/").pop() || fileName;
-        anchor.click();
-        URL.revokeObjectURL(url);
+        try {
+          await downloadBlob(link.href, file.name);
+        } catch (error) {
+          showToast(error.message || "Download failed.");
+        }
       });
       row.append(link);
 
@@ -401,22 +468,56 @@
         row.append(stamp);
       }
 
+      const download = document.createElement("button");
+      download.type = "button";
+      download.className = "ghost file-action";
+      download.textContent = "Download";
+      download.addEventListener("click", async () => {
+        try {
+          await downloadBlob(
+            fileUrl(state.project, state.version, file.path),
+            file.name,
+          );
+        } catch (error) {
+          showToast(error.message || "Download failed.");
+        }
+      });
+      row.append(download);
+
       if (isAdmin()) {
         const del = document.createElement("button");
         del.type = "button";
         del.className = "danger";
         del.textContent = "Delete";
         del.addEventListener("click", async () => {
-          await api(fileUrl(state.project, state.version, fileName), { method: "DELETE" });
-          showToast(`Deleted ${fileName}`);
+          await api(fileUrl(state.project, state.version, file.path), { method: "DELETE" });
+          showToast(`Deleted ${file.path}`);
           await openVersion(state.version);
         });
         row.append(del);
       }
 
       item.append(row);
-      els.fileList.append(item);
+      parent.append(item);
     }
+  }
+
+  function renderFiles(files) {
+    els.fileList.replaceChildren();
+    els.versionLabel.textContent = state.version
+      ? `Version ${state.version}`
+      : "Pick a version.";
+    els.downloadVersion.hidden = !state.version || files.length === 0;
+    if (!state.version) {
+      return;
+    }
+    if (files.length === 0) {
+      const item = document.createElement("li");
+      item.textContent = "No files in this version.";
+      els.fileList.append(item);
+      return;
+    }
+    renderFileNode(els.fileList, buildFileTree(files), "");
   }
 
   async function refreshProjects() {
@@ -527,6 +628,21 @@
     } catch (error) {
       els.loginError.textContent = "Sign-in failed. Check user id and password.";
       els.loginError.hidden = false;
+    }
+  });
+
+  els.downloadVersion.addEventListener("click", async () => {
+    if (!state.project || !state.version) {
+      return;
+    }
+    try {
+      await downloadBlob(
+        archiveUrl(state.project, state.version),
+        `${state.version}.zip`,
+      );
+      showToast(`Downloaded ${state.version}.zip`);
+    } catch (error) {
+      showToast(error.message || "Download failed.");
     }
   });
 

@@ -2,7 +2,10 @@ package com.playground.versionserver
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Instant
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
+import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readBytes
 import kotlin.io.path.relativeTo
 import kotlin.io.path.writeBytes
@@ -44,6 +47,32 @@ class FilesystemFileStore(private val root: Path) : FileStore {
                 .map { it.relativeTo(directory).toString().replace('\\', '/') }
                 .toList()
         }
+    }
+
+    override fun listAll(): List<StoredFileRef> {
+        if (!root.exists() || !root.isDirectory()) return emptyList()
+        val found = mutableListOf<StoredFileRef>()
+        for (projectDir in root.listDirectoryEntries()) {
+            if (!projectDir.isDirectory()) continue
+            val project = safeSegment(projectDir.fileName.toString()) ?: continue
+            for (versionDir in projectDir.listDirectoryEntries()) {
+                if (!versionDir.isDirectory()) continue
+                val version = safeSegment(versionDir.fileName.toString()) ?: continue
+                for (fileName in list(project, version)) {
+                    val path = pathFor(project, version, fileName) ?: continue
+                    val modified = runCatching {
+                        Files.getLastModifiedTime(path).toInstant()
+                    }.getOrNull()
+                    found += StoredFileRef(
+                        project = project,
+                        version = version,
+                        fileName = fileName,
+                        lastModified = modified,
+                    )
+                }
+            }
+        }
+        return found
     }
 
     override fun delete(project: String, version: String, fileName: String) {

@@ -132,8 +132,8 @@ class FilePublishTest {
             contentType(ContentType.Application.Json)
             setBody(GrantAccessRequest(userId = "alice"))
         }
-        upload(client, adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
-        upload(client, adminToken, "alpha", "2.0", "app.bin", byteArrayOf(2))
+        client.uploadFile(adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
+        client.uploadFile(adminToken, "alpha", "2.0", "app.bin", byteArrayOf(2))
         val aliceToken = client.login("alice", "alice-pass")
         val versions = client.get("/projects/alpha/versions") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -150,8 +150,8 @@ class FilePublishTest {
             contentType(ContentType.Application.Json)
             setBody(GrantAccessRequest(userId = "alice"))
         }
-        upload(client, adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
-        upload(client, adminToken, "alpha", "1.0", "notes.txt", byteArrayOf(2, 3))
+        client.uploadFile(adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
+        client.uploadFile(adminToken, "alpha", "1.0", "notes.txt", byteArrayOf(2, 3))
         val aliceToken = client.login("alice", "alice-pass")
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -181,8 +181,8 @@ class FilePublishTest {
             contentType(ContentType.Application.Json)
             setBody(GrantAccessRequest(userId = "alice"))
         }
-        upload(client, adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
-        upload(client, adminToken, "beta", "1.0", "app.bin", byteArrayOf(9))
+        client.uploadFile(adminToken, "alpha", "1.0", "app.bin", byteArrayOf(1))
+        client.uploadFile(adminToken, "beta", "1.0", "app.bin", byteArrayOf(9))
         val aliceToken = client.login("alice", "alice-pass")
         val alphaDownload = client.get("/projects/alpha/versions/1.0/files/app.bin") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -207,7 +207,7 @@ class FilePublishTest {
             contentType(ContentType.Application.Json)
             setBody(GrantAccessRequest(userId = "alice"))
         }
-        upload(client, adminToken, "alpha", "1.0", "lib/util.bin", byteArrayOf(4, 5))
+        client.uploadFile(adminToken, "alpha", "1.0", "lib/util.bin", byteArrayOf(4, 5))
         val aliceToken = client.login("alice", "alice-pass")
         val files = client.get("/projects/alpha/versions/1.0/files") {
             header(HttpHeaders.Authorization, "Bearer $aliceToken")
@@ -232,7 +232,7 @@ class FilePublishTest {
                 contentType(ContentType.Application.Json)
                 setBody(GrantAccessRequest(userId = "alice"))
             }
-            upload(client, adminToken, "alpha", "1.0", "app.bin", byteArrayOf(7, 8, 9))
+            client.uploadFile(adminToken, "alpha", "1.0", "app.bin", byteArrayOf(7, 8, 9))
         }
         withVersionServer(storageRoot, jsonStorePath) {
             val client = jsonHttpClient()
@@ -246,29 +246,5 @@ class FilePublishTest {
             assertEquals(listOf("app.bin"), files.body<FileListResponse>().fileNames())
             assertContentEquals(byteArrayOf(7, 8, 9), download.body<ByteArray>())
         }
-    }
-}
-
-private suspend fun upload(
-    client: io.ktor.client.HttpClient,
-    adminToken: String,
-    project: String,
-    version: String,
-    fileName: String,
-    bytes: ByteArray,
-) {
-    client.submitFormWithBinaryData(
-        url = "/projects/$project/versions/$version/files",
-        formData = formData {
-            append(
-                "file",
-                bytes,
-                Headers.build {
-                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                },
-            )
-        },
-    ) {
-        header(HttpHeaders.Authorization, "Bearer $adminToken")
     }
 }

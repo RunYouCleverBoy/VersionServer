@@ -127,6 +127,9 @@ class ClientUiTest {
         assertTrue(script.contains("Delete version") || script.contains("Deleted version"))
         assertTrue(script.contains("(latest)"))
         assertTrue(script.contains("uploadedAt"))
+        assertTrue(script.contains("/archive"))
+        assertTrue(script.contains("buildFileTree"))
+        assertTrue(script.contains("downloadVersion") || script.contains("download-version"))
     }
 
     @Test
@@ -142,5 +145,8 @@ class ClientUiTest {
         assertTrue(html.contains("<details id=\"admin-users\""))
         assertTrue(html.contains("<details id=\"admin-grant\""))
         assertTrue(html.contains("<details id=\"account-box\""))
+        assertTrue(html.contains("download-version"))
+        assertTrue(html.contains("Download all"))
+        assertTrue(html.contains("file-tree"))
     }
 }

@@ -212,6 +212,53 @@ button.ghost {
   border: 0;
 }
 
+.files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.files-header h3 {
+  margin: 0;
+}
+
+.files-header .ghost {
+  margin-top: 0;
+  padding: 0.35rem 0.65rem;
+}
+
+.file-tree {
+  gap: 0.2rem;
+}
+
+.file-tree .file-tree {
+  margin: 0.15rem 0 0.25rem 0.85rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid var(--line);
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.file-action {
+  margin-top: 0;
+  padding: 0.25rem 0.55rem;
+  width: auto;
+}
+
 .admin-box {
   padding: 0.9rem;
 }

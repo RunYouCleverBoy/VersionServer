@@ -119,9 +119,12 @@
               <ul id="version-list" class="menu"></ul>
             </div>
             <div>
-              <h3>Files</h3>
+              <div class="files-header">
+                <h3>Files</h3>
+                <button id="download-version" type="button" class="ghost" hidden>Download all</button>
+              </div>
               <p id="version-label" class="meta"></p>
-              <ul id="file-list" class="menu"></ul>
+              <ul id="file-list" class="menu file-tree"></ul>
               <div id="admin-upload" class="admin-box" hidden>
                 <h3>Upload</h3>
                 <form id="upload-form" class="stack compact">

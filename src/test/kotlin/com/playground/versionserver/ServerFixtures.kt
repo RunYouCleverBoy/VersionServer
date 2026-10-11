@@ -4,9 +4,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -65,3 +70,34 @@ internal fun String.isJwtFormat(): Boolean {
 internal fun VersionListResponse.versionNames(): List<String> = versions.map { it.name }
 
 internal fun FileListResponse.fileNames(): List<String> = files.map { it.name }
+
+internal suspend fun HttpClient.uploadFile(
+    token: String,
+    project: String,
+    version: String,
+    fileName: String,
+    bytes: ByteArray,
+) {
+    submitFormWithBinaryData(
+        url = "/projects/$project/versions/$version/files",
+        formData = formData {
+            append(
+                "file",
+                bytes,
+                Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                },
+            )
+        },
+    ) {
+        header(HttpHeaders.Authorization, "Bearer $token")
+    }
+}
+
+internal suspend fun HttpClient.grantAccess(token: String, project: String, userId: String) {
+    post("/projects/$project/access") {
+        header(HttpHeaders.Authorization, "Bearer $token")
+        contentType(ContentType.Application.Json)
+        setBody(GrantAccessRequest(userId = userId))
+    }
+}

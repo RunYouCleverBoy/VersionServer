@@ -1,6 +1,8 @@
 package com.playground.versionserver
 
+import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
@@ -16,8 +18,10 @@ import io.ktor.server.request.path
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.request.receiveText
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -27,6 +31,8 @@ import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.readRemaining
 import java.io.IOException
 import java.time.Instant
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.io.readByteArray
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
@@ -40,6 +46,7 @@ fun Application.module(
     fileStore: FileStore = FilesystemFileStore(config.storageRoot),
 ) {
     val database = JsonDatabase(config.jsonStorePath)
+    syncArtifactsFromDisk(database, fileStore)
     val tokens = JwtTokenService(
         secret = config.jwtSecret,
         issuer = config.jwtIssuer,
@@ -365,6 +372,46 @@ fun Application.module(
             )
         }
 
+        get("/projects/{project}/versions/{version}/archive") {
+            val project = call.parameters["project"]
+            val version = call.parameters["version"]
+            if (project.isNullOrBlank() || version.isNullOrBlank()) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@get
+            }
+            call.requireProjectAccess(tokens, database, cookieName, project) ?: return@get
+            val prefix = normalizeArchivePrefix(call.request.queryParameters["prefix"])
+            if (prefix == null) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@get
+            }
+            val files = fileStore.list(project, version)
+                .filter { matchesArchivePrefix(it, prefix) }
+                .sorted()
+            if (files.isEmpty()) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
+            val downloadName = archiveDownloadName(version, prefix)
+            call.response.header(
+                HttpHeaders.ContentDisposition,
+                ContentDisposition.Attachment
+                    .withParameter(ContentDisposition.Parameters.FileName, downloadName)
+                    .toString(),
+            )
+            call.respondOutputStream(ContentType.Application.Zip) {
+                ZipOutputStream(this).use { zip ->
+                    for (fileName in files) {
+                        val bytes = fileStore.read(project, version, fileName) ?: continue
+                        val entryName = archiveEntryName(fileName, prefix)
+                        zip.putNextEntry(ZipEntry(entryName))
+                        zip.write(bytes)
+                        zip.closeEntry()
+                    }
+                }
+            }
+        }
+
         get("/projects/{project}/versions/{version}/files/{fileName...}") {
             val project = call.parameters["project"]
             val version = call.parameters["version"]
@@ -413,3 +460,29 @@ fun Application.module(
 
 private fun IOException.isMultipartSizeLimit(): Boolean =
     message?.contains("Limit of") == true && message?.contains("bytes exceeded") == true
+
+internal fun normalizeArchivePrefix(raw: String?): String? {
+    if (raw.isNullOrBlank()) return ""
+    val normalized = raw.replace('\\', '/').trim('/')
+    if (normalized.isEmpty()) return ""
+    val segments = normalized.split('/')
+    if (segments.any { it.isEmpty() || it == "." || it == ".." }) return null
+    return normalized
+}
+
+internal fun matchesArchivePrefix(fileName: String, prefix: String): Boolean {
+    if (prefix.isEmpty()) return true
+    return fileName == prefix || fileName.startsWith("$prefix/")
+}
+
+internal fun archiveEntryName(fileName: String, prefix: String): String {
+    if (prefix.isEmpty()) return fileName
+    if (fileName == prefix) return fileName.substringAfterLast('/')
+    return fileName.removePrefix("$prefix/")
+}
+
+internal fun archiveDownloadName(version: String, prefix: String): String {
+    if (prefix.isEmpty()) return "$version.zip"
+    val leaf = prefix.substringAfterLast('/')
+    return "$leaf.zip"
+}

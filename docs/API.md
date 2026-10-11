@@ -20,6 +20,8 @@ Runtime data lives under the process working directory (defaults below). The `da
 | JSON database | `data/store.json` | Users (`passwordHash` only), project grants, and artifact index (`project` / `version` / `fileName` / `uploadedAt`). Auto-created with seeded users if missing or empty. |
 | File bytes | `data/files/` | `{project}/{version}/{relative-file-path}` via the filesystem `FileStore`. |
 
+On startup the server walks the file storage root and adds any on-disk files that are missing from the artifact index (existing rows are left unchanged; `uploadedAt` comes from the file's last-modified time when available).
+
 Override with `VERSION_SERVER_JSON` and `VERSION_SERVER_STORAGE` (see [Configuration](#configuration)). Paths may be absolute.
 
 ## Authentication
@@ -271,6 +273,23 @@ Lists file paths for that version (including nested relative paths), each with a
   ]
 }
 ```
+
+---
+
+### `GET /projects/{project}/versions/{version}/archive`
+
+Requires project access.
+
+Downloads a ZIP of files for that version. Optional query `prefix` limits the archive to one file or directory tree (e.g. `prefix=lib` → entries relative to `lib/`).
+
+```bash
+curl -OJ -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/projects/alpha/versions/1.0/archive?prefix=lib"
+```
+
+**Response** `200 OK` with `Content-Type: application/zip` and `Content-Disposition: attachment`.
+
+**Errors:** `401`, `403`, `400` (invalid prefix), `404` if no files match.
 
 ---
 
