@@ -242,21 +242,49 @@ button.ghost {
 .file-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  padding: 0.2rem 0;
 }
 
 .file-name {
   flex: 1 1 auto;
   min-width: 0;
   color: inherit;
-  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.file-action {
-  margin-top: 0;
-  padding: 0.25rem 0.55rem;
-  width: auto;
+.menu .icon-button,
+.icon-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  min-width: 1.85rem;
+  height: 1.85rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--muted);
+}
+
+.menu .icon-button svg,
+.icon-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+
+.menu .icon-button:hover,
+.icon-button:hover {
+  color: var(--accent-ink);
+  background: rgba(15, 118, 110, 0.1);
+  border-color: var(--line);
 }
 
 .admin-box {

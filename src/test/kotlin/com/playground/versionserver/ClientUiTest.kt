@@ -129,6 +129,7 @@ class ClientUiTest {
         assertTrue(script.contains("uploadedAt"))
         assertTrue(script.contains("/archive"))
         assertTrue(script.contains("buildFileTree"))
+        assertTrue(script.contains("downloadIconButton"))
         assertTrue(script.contains("downloadVersion") || script.contains("download-version"))
     }
 

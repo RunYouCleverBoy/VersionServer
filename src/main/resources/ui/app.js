@@ -95,6 +95,20 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadIconButton(label, onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "icon-button";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v9.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42L11 13.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/>' +
+      "</svg>";
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
   function buildFileTree(files) {
     const root = { dirs: new Map(), files: [] };
     for (const file of files) {
@@ -409,27 +423,25 @@
       const row = document.createElement("div");
       row.className = "file-row";
 
+      row.append(
+        downloadIconButton(`Download ${dirName}/`, async () => {
+          try {
+            await downloadBlob(
+              archiveUrl(state.project, state.version, dirPrefix),
+              `${dirName}.zip`,
+            );
+            showToast(`Downloaded ${dirName}/`);
+          } catch (error) {
+            showToast(error.message || "Download failed.");
+          }
+        }),
+      );
+
       const label = document.createElement("span");
       label.className = "file-name";
       label.textContent = `${dirName}/`;
       row.append(label);
 
-      const download = document.createElement("button");
-      download.type = "button";
-      download.className = "ghost file-action";
-      download.textContent = "Download";
-      download.addEventListener("click", async () => {
-        try {
-          await downloadBlob(
-            archiveUrl(state.project, state.version, dirPrefix),
-            `${dirName}.zip`,
-          );
-          showToast(`Downloaded ${dirName}/`);
-        } catch (error) {
-          showToast(error.message || "Download failed.");
-        }
-      });
-      row.append(download);
       item.append(row);
 
       const children = document.createElement("ul");
@@ -446,19 +458,23 @@
       const row = document.createElement("div");
       row.className = "file-row";
 
-      const link = document.createElement("a");
-      link.className = "file-name";
-      link.href = fileUrl(state.project, state.version, file.path);
-      link.textContent = file.name;
-      link.addEventListener("click", async (event) => {
-        event.preventDefault();
-        try {
-          await downloadBlob(link.href, file.name);
-        } catch (error) {
-          showToast(error.message || "Download failed.");
-        }
-      });
-      row.append(link);
+      row.append(
+        downloadIconButton(`Download ${file.name}`, async () => {
+          try {
+            await downloadBlob(
+              fileUrl(state.project, state.version, file.path),
+              file.name,
+            );
+          } catch (error) {
+            showToast(error.message || "Download failed.");
+          }
+        }),
+      );
+
+      const name = document.createElement("span");
+      name.className = "file-name";
+      name.textContent = file.name;
+      row.append(name);
 
       const uploaded = formatUploadedAt(file.uploadedAt);
       if (uploaded) {
@@ -467,22 +483,6 @@
         stamp.textContent = uploaded;
         row.append(stamp);
       }
-
-      const download = document.createElement("button");
-      download.type = "button";
-      download.className = "ghost file-action";
-      download.textContent = "Download";
-      download.addEventListener("click", async () => {
-        try {
-          await downloadBlob(
-            fileUrl(state.project, state.version, file.path),
-            file.name,
-          );
-        } catch (error) {
-          showToast(error.message || "Download failed.");
-        }
-      });
-      row.append(download);
 
       if (isAdmin()) {
         const del = document.createElement("button");
