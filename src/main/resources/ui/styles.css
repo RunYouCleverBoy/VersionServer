@@ -86,7 +86,7 @@ body {
   display: grid;
   grid-template-columns: minmax(220px, 280px) 1fr;
   min-height: 520px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 h1,
@@ -161,6 +161,8 @@ button.ghost {
   padding: 1.25rem;
   border-right: 1px solid var(--line);
   background: #f8faf8;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .main {

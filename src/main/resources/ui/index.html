@@ -49,7 +49,7 @@
             </label>
             <label>
               Password
-              <input id="enroll-password" type="password" required />
+              <input id="enroll-password" type="password" autocomplete="new-password" required />
             </label>
             <label>
               Role
@@ -81,14 +81,26 @@
         </details>
         <details id="account-box" class="rail-card" data-accordion="rail" hidden>
           <summary>Change password</summary>
-          <form id="password-form" class="stack compact">
+          <form id="password-form" class="stack compact" autocomplete="on">
             <label>
               Current password
-              <input id="current-password" type="password" autocomplete="current-password" required />
+              <input
+                id="current-password"
+                name="current-password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
             </label>
             <label>
               New password
-              <input id="new-password" type="password" autocomplete="new-password" required />
+              <input
+                id="new-password"
+                name="new-password"
+                type="password"
+                autocomplete="new-password"
+                required
+              />
             </label>
             <button type="submit">Update password</button>
           </form>

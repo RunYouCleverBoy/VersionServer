@@ -87,6 +87,9 @@ class ClientUiTest {
         assertTrue(html.contains("Change password"))
         val script = client.get("/ui/app.js").bodyAsText()
         assertTrue(script.contains("/password"))
+        // Wrong current password is 401; client must not treat that as a dead session.
+        assertTrue(script.contains("path !== \"/password\""))
+        assertTrue(script.contains("Current password is incorrect."))
     }
 
     @Test

@@ -156,9 +156,18 @@ fun Application.module(
             val user = call.requireUser(tokens, database, cookieName) ?: return@post
             val request = call.receive<ChangePasswordRequest>()
             when (database.changePassword(user.id, request.currentPassword, request.newPassword)) {
-                null -> call.respond(HttpStatusCode.BadRequest)
-                false -> call.respond(HttpStatusCode.Unauthorized)
-                true -> call.respond(HttpStatusCode.NoContent)
+                null -> {
+                    appLog.warn("password change rejected: empty new password userId={}", user.id)
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+                false -> {
+                    appLog.warn("password change rejected: wrong current password userId={}", user.id)
+                    call.respond(HttpStatusCode.Unauthorized)
+                }
+                true -> {
+                    appLog.info("password change ok userId={}", user.id)
+                    call.respond(HttpStatusCode.NoContent)
+                }
             }
         }
 

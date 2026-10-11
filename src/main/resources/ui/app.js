@@ -104,7 +104,8 @@
       body: options.json !== undefined ? JSON.stringify(options.json) : options.body,
     });
     if (!response.ok) {
-      if (response.status === 401 && path !== "/login") {
+      // Wrong current password on /password is also 401; keep the session.
+      if (response.status === 401 && path !== "/login" && path !== "/password") {
         clearSession();
         clearPending();
         renderSession();
@@ -141,6 +142,10 @@
     if (signedIn) {
       els.session.textContent = `${state.userId} · ${state.role}`;
     }
+    // Keep the hidden login form out of password-manager autofill while signed in.
+    els.loginForm.setAttribute("autocomplete", signedIn ? "off" : "on");
+    document.getElementById("user-id").setAttribute("autocomplete", signedIn ? "off" : "username");
+    document.getElementById("password").setAttribute("autocomplete", signedIn ? "off" : "current-password");
     els.adminEnroll.hidden = !isAdmin();
     els.adminGrant.hidden = !isAdmin();
     els.adminUsers.hidden = !isAdmin();
@@ -550,7 +555,12 @@
       els.passwordForm.reset();
       showToast("Password updated");
     } catch (error) {
-      showToast(error.message || "Password change failed.");
+      const raw = error.message || "";
+      showToast(
+        /401|Unauthorized/i.test(raw)
+          ? "Current password is incorrect."
+          : raw || "Password change failed.",
+      );
     }
   });
 
