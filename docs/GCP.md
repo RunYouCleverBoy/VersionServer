@@ -1,6 +1,6 @@
 # Run Version Server on a GCP VM
 
-A Compute Engine VM can run the same container as a local Docker host. The VM needs this checkout: the copy on GitHub and `rycbar1948/version-server` on Docker Hub were published before JWT certificate signing. A plain `git clone` of that published commit, or `docker pull` of that image, still signs login tokens with the HMAC secret.
+A Compute Engine VM can run the same container as a local Docker host. `rycbar1948/version-server` on Docker Hub is the Python image built from this checkout.
 
 Tokens issued here keep working on the VM when the VM uses the same `jwt.crt` and `jwt.key`.
 
@@ -8,7 +8,7 @@ Tokens issued here keep working on the VM when the VM uses the same `jwt.crt` an
 
 Keep a single Compute Engine instance named `version-server`. Each run looks that name up in one zone and starts it. The instance is created only when that name is missing.
 
-Use Ubuntu with at least 8 GB of RAM. The container limit is 3 GB and the JVM heap is 2 GB. Pick one zone and keep using it. The examples below use `us-central1-a`.
+Use Ubuntu with at least 4 GB of RAM. The container limit is 3 GB. Pick one zone and keep using it. The examples below use `us-central1-a`.
 
 Allow HTTP to instances tagged `version-server`. Create the firewall rule only when that rule name is missing. Add `tcp:8443` to the rule when the VM should serve HTTPS.
 
@@ -84,7 +84,6 @@ VERSION_SERVER_JWT_CERT=/var/lib/version-server/jwt/jwt.crt
 VERSION_SERVER_JWT_KEY=/var/lib/version-server/jwt/jwt.key
 VERSION_SERVER_PORT=8080
 VERSION_SERVER_UPLOAD_MAX_BYTES=1073741824
-JAVA_TOOL_OPTIONS=-Xmx2g
 VERSION_SERVER_HTTPS_PORT=8443
 ```
 

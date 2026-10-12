@@ -47,10 +47,8 @@ VERSION_SERVER_JWT_KEY_PASSWORD=
 VERSION_SERVER_PORT=8080
 
 # Max size of one multipart upload part, in bytes (1 GiB).
+# The server streams each part to disk.
 VERSION_SERVER_UPLOAD_MAX_BYTES=1073741824
-
-# Uploads are buffered in memory, so the heap must exceed that limit.
-JAVA_TOOL_OPTIONS=-Xmx2g
 
 # TLS certificate. Leave these empty to serve HTTP and print setup steps.
 # Create the files yourself. Do not commit them or copy them into the image.
@@ -80,7 +78,6 @@ load_runtime_env() {
 
     : "${VERSION_SERVER_PORT:=8080}"
     : "${VERSION_SERVER_UPLOAD_MAX_BYTES:=1073741824}"
-    : "${JAVA_TOOL_OPTIONS:=-Xmx2g}"
     : "${VERSION_SERVER_DATA_DIR:=}"
     : "${VERSION_SERVER_JWT_CERT:=}"
     : "${VERSION_SERVER_JWT_KEY:=}"
@@ -102,7 +99,7 @@ load_runtime_env() {
 
     export VERSION_SERVER_DATA_DIR VERSION_SERVER_PORT VERSION_SERVER_UPLOAD_MAX_BYTES
     export VERSION_SERVER_JWT_SECRET VERSION_SERVER_JWT_CERT VERSION_SERVER_JWT_KEY
-    export VERSION_SERVER_JWT_KEY_PASSWORD JAVA_TOOL_OPTIONS
+    export VERSION_SERVER_JWT_KEY_PASSWORD
     export VERSION_SERVER_TLS_CERT VERSION_SERVER_TLS_KEY VERSION_SERVER_TLS_KEY_PASSWORD
     export VERSION_SERVER_TLS_KEYSTORE VERSION_SERVER_TLS_KEYSTORE_PASSWORD VERSION_SERVER_TLS_KEY_ALIAS
     export VERSION_SERVER_TLS_DIR VERSION_SERVER_HTTPS_PORT
