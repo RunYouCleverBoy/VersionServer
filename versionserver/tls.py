@@ -193,7 +193,7 @@ def _load_keystore_tls(path_value: str, env: Callable[[str], str | None], https_
         return InvalidTls(f"Could not open keystore {path_value}: {loaded}")
     private_key, certificates, aliases = loaded
     requested = env_value(env, "VERSION_SERVER_TLS_KEY_ALIAS")
-    alias = requested or next(iter(aliases), None)
+    alias = _matching_alias(aliases, requested)
     if alias is None:
         return InvalidTls(f"Keystore {path_value} has no private key entry.")
     if alias not in aliases:
@@ -271,6 +271,18 @@ def _open_jks(
     if not certificates:
         raise ValueError("no certificate")
     return private_key, certificates, {alias: certificates[0]}
+
+
+def _matching_alias(aliases: dict[str, x509.Certificate], requested: str | None) -> str | None:
+    if requested is None:
+        return next(iter(aliases), None)
+    if requested in aliases:
+        return requested
+    folded = requested.casefold()
+    for name in aliases:
+        if name.casefold() == folded:
+            return name
+    return requested
 
 
 def _friendly_name(value: bytes | str | None) -> str | None:

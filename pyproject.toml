@@ -8,6 +8,7 @@ dependencies = [
     "cryptography>=44.0.0",
     "fastapi>=0.115.6",
     "markdown>=3.7",
+    "pyjks>=20.0.0",
     "pyjwt>=2.10.1",
     "python-multipart>=0.0.20",
     "uvicorn[standard]>=0.34.0",

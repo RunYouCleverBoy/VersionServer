@@ -283,6 +283,50 @@ def test_keystore_path_is_accepted(tmp_path):
     assert subject_cn(from_store) == "localhost"
 
 
+def test_jks_keystore_is_accepted(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    import jks
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
+    now = datetime.now(timezone.utc)
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(1)
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=1))
+        .sign(key, hashes.SHA256())
+    )
+    pkcs8 = key.private_bytes(
+        serialization.Encoding.DER,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    )
+    entry = jks.PrivateKeyEntry.new(
+        "version-server",
+        [certificate.public_bytes(serialization.Encoding.DER)],
+        pkcs8,
+    )
+    store_path = tmp_path / "server.jks"
+    jks.KeyStore.new("jks", [entry]).save(str(store_path), "test-pass")
+    loaded = _ready(
+        {
+            "VERSION_SERVER_TLS_CERT": str(store_path),
+            "VERSION_SERVER_TLS_KEYSTORE_PASSWORD": "test-pass",
+        }
+    )
+    assert loaded.description == f"keystore {store_path}"
+    assert subject_cn(loaded) == "localhost"
+
+
 def test_a_certificate_without_a_key_is_rejected():
     loaded = load_server_tls(lambda name: "certs/server.crt" if name == "VERSION_SERVER_TLS_CERT" else None)
     assert isinstance(loaded, InvalidTls)
