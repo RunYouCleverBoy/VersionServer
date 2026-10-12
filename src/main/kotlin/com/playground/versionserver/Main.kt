@@ -13,15 +13,26 @@ fun main() {
     val logDir = Path.of(System.getenv("VERSION_SERVER_LOG_DIR") ?: "logs")
     Files.createDirectories(logDir)
     val log = LoggerFactory.getLogger("com.playground.versionserver.Main")
+    val signing = loadJwtSigning(System::getenv)
+    if (signing is JwtSigningLoad.Invalid) {
+        log.error(signing.detail)
+        exitProcess(1)
+    }
     val config = AppConfig(
         storageRoot = Path.of(System.getenv("VERSION_SERVER_STORAGE") ?: "data/files"),
         jsonStorePath = Path.of(System.getenv("VERSION_SERVER_JSON") ?: "data/store.json"),
         jwtSecret = System.getenv("VERSION_SERVER_JWT_SECRET") ?: "dev-only-change-me",
+        jwtCertificate = (signing as? JwtSigningLoad.Certificate)?.certificate,
+        jwtPrivateKey = (signing as? JwtSigningLoad.Certificate)?.privateKey,
         multipartFormFieldLimitBytes = System.getenv("VERSION_SERVER_UPLOAD_MAX_BYTES")
             ?.toLongOrNull()
             ?.takeIf { it > 0 }
             ?: (1024L * 1024L * 1024L),
     )
+    if (config.signingAlgorithm() == null) {
+        log.error(JwtGuidance.howToCreate)
+        exitProcess(1)
+    }
     val tls = when (val loaded = loadServerTls(System::getenv)) {
         ServerTlsLoad.Missing -> {
             log.warn(TlsGuidance.missing)
@@ -34,11 +45,12 @@ fun main() {
         is ServerTlsLoad.Ready -> loaded.tls
     }
     log.info(
-        "starting VersionServer storage={} json={} logs={} uploadMaxBytes={} tls={}",
+        "starting VersionServer storage={} json={} logs={} uploadMaxBytes={} jwt={} tls={}",
         config.storageRoot.toAbsolutePath(),
         config.jsonStorePath.toAbsolutePath(),
         logDir.toAbsolutePath(),
         config.multipartFormFieldLimitBytes,
+        (signing as? JwtSigningLoad.Certificate)?.description ?: "hmac",
         tls?.description ?: "off",
     )
     embeddedServer(Netty, configure = {

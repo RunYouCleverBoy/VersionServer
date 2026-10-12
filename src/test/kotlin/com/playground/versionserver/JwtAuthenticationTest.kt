@@ -103,6 +103,44 @@ class JwtAuthenticationTest {
     }
 
     @Test
+    fun `no API accepts a token that was not signed by our certificate`() {
+        val dir = createTempDirectory("vs-jwt")
+        val certificatePath = dir.resolve("jwt.crt")
+        val keyPath = dir.resolve("jwt.key")
+        opensslJwt(
+            "req", "-x509", "-newkey", "rsa:2048", "-sha256", "-days", "1", "-nodes",
+            "-keyout", keyPath.toString(), "-out", certificatePath.toString(),
+            "-subj", "/CN=version-server-jwt",
+        )
+        val signing = loadJwtSigning { name ->
+            when (name) {
+                "VERSION_SERVER_JWT_CERT" -> certificatePath.toString()
+                "VERSION_SERVER_JWT_KEY" -> keyPath.toString()
+                else -> null
+            }
+        }
+        val ours = signing as? JwtSigningLoad.Certificate ?: error("jwt certificate did not load")
+        withVersionServer(jwtCertificate = ours.certificate, jwtPrivateKey = ours.privateKey) {
+            val client = createClient {
+                install(ContentNegotiation) { json() }
+            }
+            val token = jsonHttpClient().login("admin", "admin-pass")
+            assertEquals(
+                HttpStatusCode.OK,
+                client.get("/projects") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }.status,
+            )
+            assertEveryProtectedApiRejects(client) {
+                header(HttpHeaders.Authorization, "Bearer ${tokenSignedByOtherCertificate()}")
+            }
+            assertEveryProtectedApiRejects(client) {
+                header(HttpHeaders.Cookie, "VS_TOKEN=${tokenSignedByOtherCertificate()}")
+            }
+        }
+    }
+
+    @Test
     fun `no API accepts a token that was not signed by our signing key`() = withVersionServer {
         val client = createClient {
             install(ContentNegotiation) { json() }
@@ -200,6 +238,17 @@ private suspend fun assertEveryProtectedApiRejects(
     )
     for ((route, status) in statuses) {
         assertEquals(HttpStatusCode.Unauthorized, status, route)
+    }
+}
+
+private fun opensslJwt(vararg args: String) {
+    val process = ProcessBuilder(listOf("openssl") + args)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.readBytes().decodeToString()
+    val code = process.waitFor()
+    if (code != 0) {
+        error("openssl ${args.joinToString(" ")} failed: $output")
     }
 }
 

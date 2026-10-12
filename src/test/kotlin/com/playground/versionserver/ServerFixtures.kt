@@ -17,6 +17,8 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import java.nio.file.Path
+import java.security.cert.X509Certificate
+import java.security.interfaces.RSAPrivateKey
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.createTempFile
 
@@ -24,6 +26,8 @@ internal fun ApplicationTestBuilder.installVersionServer(
     storageRoot: Path = createTempDirectory("vs-files"),
     jsonStorePath: Path = createTempFile("vs-store", ".json"),
     jwtSecret: String = "test-secret",
+    jwtCertificate: X509Certificate? = null,
+    jwtPrivateKey: RSAPrivateKey? = null,
 ) {
     application {
         module(
@@ -31,6 +35,8 @@ internal fun ApplicationTestBuilder.installVersionServer(
                 storageRoot = storageRoot,
                 jsonStorePath = jsonStorePath,
                 jwtSecret = jwtSecret,
+                jwtCertificate = jwtCertificate,
+                jwtPrivateKey = jwtPrivateKey,
             ),
         )
     }
@@ -45,9 +51,11 @@ internal fun withVersionServer(
     storageRoot: Path = createTempDirectory("vs-files"),
     jsonStorePath: Path = createTempFile("vs-store", ".json"),
     jwtSecret: String = "test-secret",
+    jwtCertificate: X509Certificate? = null,
+    jwtPrivateKey: RSAPrivateKey? = null,
     block: suspend ApplicationTestBuilder.() -> Unit,
 ) = testApplication {
-    installVersionServer(storageRoot, jsonStorePath, jwtSecret)
+    installVersionServer(storageRoot, jsonStorePath, jwtSecret, jwtCertificate, jwtPrivateKey)
     block()
 }
 

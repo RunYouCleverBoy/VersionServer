@@ -5,12 +5,11 @@ import com.auth0.jwt.algorithms.Algorithm
 import java.util.Date
 
 class JwtTokenService(
-    private val secret: String,
+    private val algorithm: Algorithm,
     private val issuer: String,
     private val audience: String,
     private val validityMs: Long,
 ) {
-    private val algorithm = Algorithm.HMAC256(secret)
     private val verifier = JWT.require(algorithm)
         .withIssuer(issuer)
         .withAudience(audience)

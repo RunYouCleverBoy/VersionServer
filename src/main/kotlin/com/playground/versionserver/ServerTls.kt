@@ -185,7 +185,7 @@ private fun buildPemKeyStore(certificateText: String, keyText: String, keyPasswo
     return BuiltKeyStore(store, password)
 }
 
-private fun parseCertificates(text: String): List<X509Certificate>? {
+internal fun parseCertificates(text: String): List<X509Certificate>? {
     val blocks = pemBlocks(text).filter { it.type == "CERTIFICATE" }
     if (blocks.isEmpty()) return null
     val factory = CertificateFactory.getInstance("X.509")
@@ -194,7 +194,7 @@ private fun parseCertificates(text: String): List<X509Certificate>? {
     }
 }
 
-private fun parsePrivateKey(text: String, password: CharArray): PrivateKey? {
+internal fun parsePrivateKey(text: String, password: CharArray): PrivateKey? {
     val block = pemBlocks(text).firstOrNull {
         it.type == "PRIVATE KEY" || it.type == "ENCRYPTED PRIVATE KEY" || it.type == "RSA PRIVATE KEY"
     } ?: return null
@@ -235,7 +235,7 @@ private fun decryptPkcs8(encoded: ByteArray, password: CharArray): ByteArray? {
     }
 }
 
-private fun privateKeyMatches(certificate: X509Certificate, privateKey: PrivateKey): Boolean {
+internal fun privateKeyMatches(certificate: X509Certificate, privateKey: PrivateKey): Boolean {
     val publicKey = certificate.publicKey
     if (privateKey is RSAPrivateCrtKey && publicKey is RSAPublicKey) {
         return privateKey.modulus == publicKey.modulus
@@ -263,7 +263,7 @@ private fun httpsPort(env: (String) -> String?): Int? {
     return port
 }
 
-private fun envValue(env: (String) -> String?, name: String): String? =
+internal fun envValue(env: (String) -> String?, name: String): String? =
     env(name)?.trim()?.takeIf { it.isNotEmpty() }
 
 private fun isKeyStorePath(value: String): Boolean {
@@ -272,7 +272,7 @@ private fun isKeyStorePath(value: String): Boolean {
     return name.endsWith(".p12") || name.endsWith(".pfx") || name.endsWith(".jks")
 }
 
-private fun readMaterial(value: String): String? {
+internal fun readMaterial(value: String): String? {
     if (value.contains("-----BEGIN")) return value
     val path = Path.of(value)
     if (!path.isRegularFile()) return null

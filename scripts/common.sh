@@ -34,7 +34,14 @@ ensure_env_file() {
 VERSION_SERVER_DATA_DIR=
 
 # HMAC secret for login cookies. Changing it signs everyone out.
+# Ignored for signing when VERSION_SERVER_JWT_CERT and VERSION_SERVER_JWT_KEY are set.
 VERSION_SERVER_JWT_SECRET="${secret}"
+
+# RSA certificate that signs login JWTs. Leave empty to create jwt.crt and jwt.key
+# in the data volume on the next start. Do not commit those files.
+VERSION_SERVER_JWT_CERT=
+VERSION_SERVER_JWT_KEY=
+VERSION_SERVER_JWT_KEY_PASSWORD=
 
 # Host port published to container port 8080.
 VERSION_SERVER_PORT=8080
@@ -75,6 +82,9 @@ load_runtime_env() {
     : "${VERSION_SERVER_UPLOAD_MAX_BYTES:=1073741824}"
     : "${JAVA_TOOL_OPTIONS:=-Xmx2g}"
     : "${VERSION_SERVER_DATA_DIR:=}"
+    : "${VERSION_SERVER_JWT_CERT:=}"
+    : "${VERSION_SERVER_JWT_KEY:=}"
+    : "${VERSION_SERVER_JWT_KEY_PASSWORD:=}"
     : "${VERSION_SERVER_TLS_CERT:=}"
     : "${VERSION_SERVER_TLS_KEY:=}"
     : "${VERSION_SERVER_TLS_KEY_PASSWORD:=}"
@@ -91,7 +101,8 @@ load_runtime_env() {
     fi
 
     export VERSION_SERVER_DATA_DIR VERSION_SERVER_PORT VERSION_SERVER_UPLOAD_MAX_BYTES
-    export VERSION_SERVER_JWT_SECRET JAVA_TOOL_OPTIONS
+    export VERSION_SERVER_JWT_SECRET VERSION_SERVER_JWT_CERT VERSION_SERVER_JWT_KEY
+    export VERSION_SERVER_JWT_KEY_PASSWORD JAVA_TOOL_OPTIONS
     export VERSION_SERVER_TLS_CERT VERSION_SERVER_TLS_KEY VERSION_SERVER_TLS_KEY_PASSWORD
     export VERSION_SERVER_TLS_KEYSTORE VERSION_SERVER_TLS_KEYSTORE_PASSWORD VERSION_SERVER_TLS_KEY_ALIAS
     export VERSION_SERVER_TLS_DIR VERSION_SERVER_HTTPS_PORT
@@ -129,6 +140,94 @@ container_tls_path() {
             printf '%s\n' "$value"
             ;;
     esac
+}
+
+ensure_jwt_certificate() {
+    if [[ -n "${VERSION_SERVER_JWT_CERT:-}" || -n "${VERSION_SERVER_JWT_KEY:-}" ]]; then
+        if [[ -z "${VERSION_SERVER_JWT_CERT:-}" || -z "${VERSION_SERVER_JWT_KEY:-}" ]]; then
+            echo "Set both VERSION_SERVER_JWT_CERT and VERSION_SERVER_JWT_KEY." >&2
+            exit 1
+        fi
+        return
+    fi
+
+    local cert_path="/var/lib/version-server/jwt/jwt.crt"
+    local key_path="/var/lib/version-server/jwt/jwt.key"
+    if jwt_material_present; then
+        echo "Using the JWT certificate already stored with the server data."
+    else
+        echo "Creating a new JWT signing certificate in the server data volume."
+        local dir="/tmp/version-server-jwt-$$"
+        mkdir -p "$dir"
+        openssl req -x509 -newkey rsa:2048 -sha256 -days 825 -nodes \
+            -keyout "$dir/jwt.key" -out "$dir/jwt.crt" \
+            -subj "/CN=version-server-jwt" >/dev/null 2>&1
+        chmod 600 "$dir/jwt.key"
+        copy_jwt_material "$dir"
+        rm -rf "$dir"
+    fi
+    set_dotenv VERSION_SERVER_JWT_CERT "$cert_path"
+    set_dotenv VERSION_SERVER_JWT_KEY "$key_path"
+    export VERSION_SERVER_JWT_CERT="$cert_path"
+    export VERSION_SERVER_JWT_KEY="$key_path"
+}
+
+jwt_material_present() {
+    if [[ -n "${VERSION_SERVER_DATA_DIR:-}" ]]; then
+        [[ -f "${VERSION_SERVER_DATA_DIR}/jwt/jwt.crt" && -f "${VERSION_SERVER_DATA_DIR}/jwt/jwt.key" ]]
+        return
+    fi
+    docker volume inspect version-server-data >/dev/null 2>&1 || return 1
+    local image="version-server:local"
+    if ! docker image inspect "$image" >/dev/null 2>&1; then
+        return 1
+    fi
+    docker run --rm --entrypoint bash -v version-server-data:/data:ro "$image" \
+        -c 'test -f /data/jwt/jwt.crt && test -f /data/jwt/jwt.key'
+}
+
+copy_jwt_material() {
+    local dir="$1"
+    if [[ -n "${VERSION_SERVER_DATA_DIR:-}" ]]; then
+        mkdir -p "${VERSION_SERVER_DATA_DIR}/jwt"
+        cp "$dir/jwt.crt" "$dir/jwt.key" "${VERSION_SERVER_DATA_DIR}/jwt/"
+        chmod 600 "${VERSION_SERVER_DATA_DIR}/jwt/jwt.key"
+        return
+    fi
+    docker volume create version-server-data >/dev/null
+    local image="version-server:local"
+    if ! docker image inspect "$image" >/dev/null 2>&1; then
+        image="alpine:3.20"
+    fi
+    if [[ "$image" == alpine:* ]]; then
+        docker run --rm -v version-server-data:/data -v "$dir:/src:ro" "$image" \
+            sh -c 'mkdir -p /data/jwt && cp /src/jwt.crt /src/jwt.key /data/jwt && chmod 600 /data/jwt/jwt.key'
+    else
+        docker run --rm --entrypoint bash -v version-server-data:/data -v "$dir:/src:ro" "$image" \
+            -c 'mkdir -p /data/jwt && cp /src/jwt.crt /src/jwt.key /data/jwt && chmod 600 /data/jwt/jwt.key'
+    fi
+}
+
+set_dotenv() {
+    local key="$1"
+    local value="$2"
+    python3 - "$root/.env" "$key" "$value" <<'PY'
+import sys
+path, key, value = sys.argv[1:]
+lines = open(path).read().splitlines()
+prefix = key + "="
+found = False
+out = []
+for line in lines:
+    if line.startswith(prefix):
+        out.append(prefix + value)
+        found = True
+    else:
+        out.append(line)
+if not found:
+    out.append(prefix + value)
+open(path, "w").write("\n".join(out) + "\n")
+PY
 }
 
 warn_if_tls_missing() {
@@ -240,6 +339,9 @@ Version Server is running.
   Store: ${store}
   Logs:  ${logs}
 EOF
+    if [[ -n "${VERSION_SERVER_JWT_CERT:-}" ]]; then
+        echo "  JWT:   ${VERSION_SERVER_JWT_CERT}"
+    fi
     if tls_configured; then
         echo "  HTTPS: https://localhost:${VERSION_SERVER_HTTPS_PORT}/"
     fi

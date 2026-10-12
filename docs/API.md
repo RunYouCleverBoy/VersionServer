@@ -26,7 +26,7 @@ Override with `VERSION_SERVER_JSON` and `VERSION_SERVER_STORAGE` (see [Configura
 
 ## Authentication
 
-Auth is **JWT-based** (HMAC-signed). `POST /login` issues a JWT and stores the same value in an `HttpOnly` cookie (`VS_TOKEN` by default). Protected endpoints accept either:
+Auth is **JWT-based**. When `VERSION_SERVER_JWT_CERT` and `VERSION_SERVER_JWT_KEY` are set, login tokens are RSA-signed with that certificate. Otherwise they are HMAC-signed with `VERSION_SERVER_JWT_SECRET`. `POST /login` issues a JWT and stores the same value in an `HttpOnly` cookie (`VS_TOKEN` by default). Protected endpoints accept either:
 
 ```http
 Authorization: Bearer <jwt>
@@ -88,7 +88,7 @@ Public. Issues a JWT.
 
 Also sets `Set-Cookie: VS_TOKEN=<jwt>; Path=/; HttpOnly; SameSite=Lax` (cookie name configurable).
 
-`role` is `"Admin"` or `"Client"`. The JWT subject is the user id; a `role` claim is included. Tokens remain valid across process restarts when the same JWT secret is used.
+`role` is `"Admin"` or `"Client"`. The JWT subject is the user id; a `role` claim is included. Tokens remain valid across process restarts when the same JWT certificate (or the same HMAC secret, when no certificate is configured) is used.
 
 **Errors:** `401` if credentials are wrong.
 
@@ -335,7 +335,10 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 |----------|---------|---------|
 | `VERSION_SERVER_STORAGE` | `data/files` | Root directory for published file bytes (`{project}/{version}/...`) |
 | `VERSION_SERVER_JSON` | `data/store.json` | JSON database path (users, grants, artifact index; SHA-256 `passwordHash` only). Created with seeded users if missing or empty. |
-| `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs |
+| `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs when no certificate is set |
+| `VERSION_SERVER_JWT_CERT` | unset | PEM certificate, or a path to it, whose public key verifies login tokens. A value containing `-----BEGIN` is the certificate text. |
+| `VERSION_SERVER_JWT_KEY` | unset | PEM RSA private key, or a path to it, used to sign login tokens. Required with `VERSION_SERVER_JWT_CERT`. |
+| `VERSION_SERVER_JWT_KEY_PASSWORD` | unset | Password for an encrypted JWT private key. |
 | `VERSION_SERVER_LOG_DIR` | `logs` | Directory for rolling server logs (`versionserver.log`) |
 | `VERSION_SERVER_UPLOAD_MAX_BYTES` | `1073741824` (1 GiB) | Max size of a single multipart upload part. Oversize uploads return `413`. |
 | `VERSION_SERVER_TLS_CERT` | unset | PEM certificate, or a path to a PEM, PKCS#12, or JKS file. A value containing `-----BEGIN` is the certificate text. |

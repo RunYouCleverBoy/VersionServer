@@ -7,6 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 require_docker
 ensure_env_file
 load_runtime_env
+ensure_jwt_certificate
 warn_if_tls_missing
 
 fresh=0

@@ -47,8 +47,9 @@ fun Application.module(
 ) {
     val database = JsonDatabase(config.jsonStorePath)
     syncArtifactsFromDisk(database, fileStore)
+    val algorithm = config.signingAlgorithm() ?: return
     val tokens = JwtTokenService(
-        secret = config.jwtSecret,
+        algorithm = algorithm,
         issuer = config.jwtIssuer,
         audience = config.jwtAudience,
         validityMs = config.jwtValidityMs,
