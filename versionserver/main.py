@@ -24,16 +24,39 @@ logger = logging.getLogger("versionserver")
 HTTP_PORT = 8080
 
 
-def main() -> None:
-    log_dir = Path(os.environ.get("VERSION_SERVER_LOG_DIR") or "logs")
-    configure_logging(log_dir)
+def build_app():
+    """ASGI app for hosts that import the process instead of calling main()."""
+    config, _signing_description = config_from_env()
+    return create_app(config)
+
+
+def config_from_env() -> tuple[AppConfig, str]:
     signing = load_jwt_signing(os.environ.get)
     if isinstance(signing, InvalidSigning):
-        logger.error("%s", signing.detail)
-        sys.exit(1)
+        raise RuntimeError(signing.detail)
     config = _config_from_env(signing)
     if config.signing_key() is None:
-        logger.error("%s", HOW_TO_CREATE)
+        raise RuntimeError(HOW_TO_CREATE)
+    description = signing.material.description if isinstance(signing, CertificateSigning) else "hmac"
+    return config, description
+
+
+def path_from_env(name: str, default: str) -> Path:
+    raw = os.environ.get(name)
+    if raw is not None and raw.strip() != "":
+        return Path(raw)
+    if os.environ.get("VERCEL") == "1":
+        return Path("/tmp/version-server") / default
+    return Path(default)
+
+
+def main() -> None:
+    log_dir = path_from_env("VERSION_SERVER_LOG_DIR", "logs")
+    configure_logging(log_dir)
+    try:
+        config, signing_description = config_from_env()
+    except RuntimeError as error:
+        logger.error("%s", error)
         sys.exit(1)
     tls_load = load_server_tls(os.environ.get)
     tls = None
@@ -44,7 +67,6 @@ def main() -> None:
         sys.exit(1)
     elif isinstance(tls_load, ReadyTls):
         tls = tls_load.tls
-    signing_description = signing.material.description if isinstance(signing, CertificateSigning) else "hmac"
     logger.info(
         "starting VersionServer storage=%s json=%s logs=%s uploadMaxBytes=%s jwt=%s tls=%s",
         config.storage_root.resolve(),
@@ -66,8 +88,8 @@ def _config_from_env(signing: object) -> AppConfig:
         certificate = signing.material.certificate
         private_key = signing.material.private_key
     return AppConfig(
-        storage_root=Path(os.environ.get("VERSION_SERVER_STORAGE") or "data/files"),
-        json_store_path=Path(os.environ.get("VERSION_SERVER_JSON") or "data/store.json"),
+        storage_root=path_from_env("VERSION_SERVER_STORAGE", "data/files"),
+        json_store_path=path_from_env("VERSION_SERVER_JSON", "data/store.json"),
         jwt_secret=os.environ.get("VERSION_SERVER_JWT_SECRET") or "dev-only-change-me",
         jwt_certificate=certificate,
         jwt_private_key=private_key,
