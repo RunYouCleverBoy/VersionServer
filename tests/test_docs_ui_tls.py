@@ -86,6 +86,16 @@ def test_ui_without_trailing_slash_redirects(tmp_path):
         assert response.headers["location"] == "/ui/"
 
 
+def test_favicon_is_served_for_the_app_and_docs(tmp_path):
+    with make_client(tmp_path) as client:
+        icon = client.get("/favicon.svg")
+        assert icon.status_code == 200
+        assert icon.headers["content-type"].startswith("image/svg+xml")
+        assert "<svg" in icon.text
+        assert 'href="/favicon.svg"' in client.get("/ui/").text
+        assert 'href="/favicon.svg"' in client.get("/doc/").text
+
+
 def test_web_client_is_served(tmp_path):
     with make_client(tmp_path) as client:
         response = client.get("/ui/")

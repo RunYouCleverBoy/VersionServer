@@ -33,6 +33,7 @@ upload_log = logging.getLogger("versionserver.upload")
 client_log = logging.getLogger("versionserver.client")
 
 _UI_DIR = Path(__file__).resolve().parent / "static" / "ui"
+_FAVICON = Path(__file__).resolve().parent / "static" / "favicon.svg"
 _FILENAME_STAR = re.compile(r"filename\*=(?:UTF-8|utf-8)''([^;]+)")
 _FILENAME = re.compile(r'filename="((?:\\.|[^"\\])*)"|filename=([^;\s]+)', re.IGNORECASE)
 
@@ -102,6 +103,12 @@ def create_app(config: AppConfig, file_store: FileStore | None = None) -> FastAP
         text = raw.decode("utf-8", errors="replace")[:8192]
         client_log.info("%s", text)
         return Response(status_code=204)
+
+    @app.get("/favicon.svg", include_in_schema=False)
+    async def favicon() -> Response:
+        if not _FAVICON.is_file():
+            return Response(status_code=404)
+        return FileResponse(_FAVICON, media_type="image/svg+xml")
 
     @app.get("/")
     async def root() -> Response:
