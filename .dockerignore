@@ -1,13 +1,13 @@
 .git
-.gradle
-.idea
-.kotlin
-build
+.venv
+.pytest_cache
+__pycache__
+*.py[cod]
 data
 logs
 out
 .env
-*.iml
+.idea
 .DS_Store
 *.pem
 *.key
@@ -17,3 +17,6 @@ out
 *.pfx
 *.jks
 certs/
+tests
+dist
+*.egg-info
