@@ -218,7 +218,41 @@
     els.userList.replaceChildren();
     for (const user of users) {
       const item = document.createElement("li");
-      item.textContent = `${user.userId} · ${user.role}`;
+      const row = document.createElement("div");
+      row.className = "user-row";
+
+      const label = document.createElement("span");
+      label.className = "user-label";
+      label.textContent = `${user.userId} · ${user.role}`;
+      row.append(label);
+
+      if (user.userId !== state.userId) {
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "danger";
+        del.textContent = "Delete";
+        del.addEventListener("click", async () => {
+          if (!window.confirm(`Delete user ${user.userId}?`)) {
+            return;
+          }
+          try {
+            await api(`/users/${encodeURIComponent(user.userId)}`, { method: "DELETE" });
+            showToast(`Deleted ${user.userId}`);
+            await refreshUsers();
+            await refreshProjects();
+          } catch (error) {
+            const raw = error.message || "";
+            showToast(
+              /409|Conflict/i.test(raw)
+                ? "You cannot delete your own account."
+                : raw || "Delete failed.",
+            );
+          }
+        });
+        row.append(del);
+      }
+
+      item.append(row);
       els.userList.append(item);
     }
   }

@@ -133,6 +133,7 @@ def _assert_every_protected_api_rejects(client, headers: dict[str, str]) -> None
         client.get("/projects", headers=headers),
         client.get("/users", headers=headers),
         client.post("/users", headers=headers),
+        client.delete("/users/alice", headers=headers),
         client.post("/projects/alpha/access", headers=headers),
         client.get("/projects/alpha/versions", headers=headers),
         client.post("/projects/alpha/versions/1.0/files", headers=headers),

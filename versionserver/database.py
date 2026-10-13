@@ -46,6 +46,16 @@ class JsonDatabase:
         with self._lock:
             return list(self._state.users)
 
+    def remove_user(self, user_id: str) -> PersistedUser | None:
+        with self._lock:
+            existing = self.user(user_id)
+            if existing is None:
+                return None
+            self._state.users = [user for user in self._state.users if user.id != user_id]
+            self._state.grants = [grant for grant in self._state.grants if grant.user_id != user_id]
+            self._persist()
+            return existing
+
     def add_user(self, user_id: str, password: str, role: Role) -> PersistedUser | None:
         if user_id.strip() == "" or password == "":
             return None

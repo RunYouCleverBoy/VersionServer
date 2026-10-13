@@ -240,6 +240,19 @@ def create_app(config: AppConfig, file_store: FileStore | None = None) -> FastAP
             content={"userId": created.id, "role": created.role.value},
         )
 
+    @app.delete("/users/{user_id}")
+    async def delete_user(user_id: str, request: Request) -> Response:
+        admin = require_admin(request)
+        if isinstance(admin, Response):
+            return admin
+        if user_id.strip() == "":
+            return Response(status_code=400)
+        if user_id == admin.id:
+            return Response(status_code=409)
+        if database.remove_user(user_id) is None:
+            return Response(status_code=404)
+        return Response(status_code=204)
+
     @app.post("/projects/{project}/access")
     async def grant_access(project: str, request: Request) -> Response:
         admin = require_admin(request)

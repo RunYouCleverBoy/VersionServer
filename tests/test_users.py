@@ -112,3 +112,77 @@ def test_client_cannot_list_users(tmp_path):
     with make_client(tmp_path) as client:
         alice = login(client, "alice", "alice-pass")
         assert client.get("/users", headers=auth(alice)).status_code == 403
+
+
+def test_admin_can_delete_another_user(tmp_path):
+    with make_client(tmp_path) as client:
+        admin = login(client, "admin", "admin-pass")
+        grant_access(client, admin, "alpha", "alice")
+        alice = login(client, "alice", "alice-pass")
+        deleted = client.delete("/users/alice", headers=auth(admin))
+        assert deleted.status_code == 204
+        listed = client.get("/users", headers=auth(admin))
+        assert "alice" not in {user["userId"] for user in listed.json()["users"]}
+        assert login_response(client, "alice", "alice-pass").status_code == 401
+        assert client.get("/projects", headers=auth(alice)).status_code == 401
+        client.post(
+            "/users",
+            headers=auth(admin),
+            json={"userId": "alice", "password": "alice-pass", "role": "Client"},
+        )
+        reenrolled = login(client, "alice", "alice-pass")
+        projects = client.get("/projects", headers=auth(reenrolled))
+        assert projects.json()["projects"] == []
+
+
+def test_admin_can_delete_another_admin(tmp_path):
+    with make_client(tmp_path) as client:
+        admin = login(client, "admin", "admin-pass")
+        client.post(
+            "/users",
+            headers=auth(admin),
+            json={"userId": "root2", "password": "root2-pass", "role": "Admin"},
+        )
+        root2 = login(client, "root2", "root2-pass")
+        deleted = client.delete("/users/admin", headers=auth(root2))
+        assert deleted.status_code == 204
+        assert login_response(client, "admin", "admin-pass").status_code == 401
+        assert client.delete("/users/root2", headers=auth(root2)).status_code == 409
+
+
+def test_admin_cannot_delete_their_own_account(tmp_path):
+    with make_client(tmp_path) as client:
+        admin = login(client, "admin", "admin-pass")
+        deleted = client.delete("/users/admin", headers=auth(admin))
+        assert deleted.status_code == 409
+        listed = client.get("/users", headers=auth(admin))
+        assert "admin" in {user["userId"] for user in listed.json()["users"]}
+        assert login_response(client, "admin", "admin-pass").status_code == 200
+
+
+def test_client_cannot_delete_a_user(tmp_path):
+    with make_client(tmp_path) as client:
+        alice = login(client, "alice", "alice-pass")
+        assert client.delete("/users/bob", headers=auth(alice)).status_code == 403
+        admin = login(client, "admin", "admin-pass")
+        listed = client.get("/users", headers=auth(admin))
+        assert "bob" in {user["userId"] for user in listed.json()["users"]}
+
+
+def test_deleting_an_unknown_user_is_not_found(tmp_path):
+    with make_client(tmp_path) as client:
+        admin = login(client, "admin", "admin-pass")
+        assert client.delete("/users/nobody", headers=auth(admin)).status_code == 404
+
+
+def test_deleted_user_stays_gone_after_restart(tmp_path):
+    storage = tmp_path / "files"
+    store = tmp_path / "store.json"
+    with make_client(tmp_path, storage_root=storage, json_store_path=store, blank_store=False) as client:
+        admin = login(client, "admin", "admin-pass")
+        assert client.delete("/users/bob", headers=auth(admin)).status_code == 204
+    with make_client(tmp_path, storage_root=storage, json_store_path=store, blank_store=False) as client:
+        admin = login(client, "admin", "admin-pass")
+        listed = client.get("/users", headers=auth(admin))
+        assert "bob" not in {user["userId"] for user in listed.json()["users"]}
+        assert login_response(client, "bob", "bob-pass").status_code == 401

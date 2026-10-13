@@ -127,6 +127,11 @@ def test_web_client_assets_and_controls(tmp_path):
         assert "els.adminEnroll.hidden = !isAdmin()" in script
         assert "els.adminGrant.hidden = !isAdmin()" in script
         assert "els.adminUsers.hidden = !isAdmin()" in script
+        assert "Delete user" in script
+        assert "user.userId !== state.userId" in script
+        assert "/users/${encodeURIComponent(user.userId)}" in script
+        assert 'method: "DELETE"' in script
+        assert "You cannot delete your own account." in script
         assert "els.adminUpload.hidden = !isAdmin()" in script
         assert "data-accordion" in script
         assert "other.open = false" in script

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Give humans a browser UI at `/ui/` to sign in, browse authorized projects/versions/files, and (for Admins) enroll users, grant access, and upload/delete files—including drag-and-drop of files and folders.
+Give humans a browser UI at `/ui/` to sign in, browse authorized projects/versions/files, and (for Admins) enroll and delete users, grant access, and upload/delete files—including drag-and-drop of files and folders.
 
 ## Entry
 
@@ -41,7 +41,8 @@ Anonymous users may load the client. All data operations go through the HTTP API
 ### Admin-only
 
 - **Enroll user:** form posts `POST /users` with user id, password, and role; refreshes user list from `GET /users`.
-- **List users:** show enrolled user ids and roles (no passwords).
+- **List users:** show enrolled user ids and roles (no passwords). Every user except the signed-in admin has a delete control.
+- **Delete user:** confirm, then `DELETE /users/{userId}`, then refresh the user list. The signed-in admin has no delete control. If the server rejects a self-delete (`409`), show a toast that you cannot delete your own account.
 - **Grant access:** form posts `POST /projects/{project}/access`. If the user does not exist, show a failure toast (server returns `404`).
 - **Upload:** require project + version; accept:
   - drag-and-drop of files and folders,
@@ -57,13 +58,14 @@ Anonymous users may load the client. All data operations go through the HTTP API
 2. Asset URLs are rooted at `/ui/...` so styles/scripts load reliably.
 3. Nested file paths are encoded segment-by-segment for download/delete URLs. Directory and whole-version downloads use `GET .../archive` (optional `prefix`).
 4. Upload queue can hold multiple files; submitting uploads all pending items then clears the queue.
-5. Errors from enroll/grant/upload surface as user-visible toasts (or login error for sign-in).
+5. Errors from enroll, delete user, grant, and upload surface as user-visible toasts (or login error for sign-in).
+6. The signed-in admin is never offered a control to delete their own account.
 
 ## Non-goals (client)
 
 - Offline mode
-- Editing passwords or deleting users
-- Revoking grants from the UI
+- Editing another user's password
+- Revoking a grant without deleting the user
 
 ## Dependency
 

@@ -8,7 +8,7 @@ Provide a JWT-authenticated HTTP API for publishing and retrieving versioned pro
 
 | Actor | Description |
 |-------|-------------|
-| Admin | Full operational control: enroll users, grant project access, upload/delete files; sees every project |
+| Admin | Full operational control: enroll and delete users, grant project access, upload/delete files; sees every project |
 | Client | Authenticated consumer; sees only granted projects; may list/download those files |
 | Anonymous | May call login/logout, load the web client static assets, and read `/doc` documentation |
 
@@ -60,7 +60,10 @@ On startup, files under the storage root that are absent from the artifact index
 - Duplicate user id yields `409 Conflict`.
 - Blank user id or empty password yields `400`.
 - Admin may `GET /users` to list user ids and roles (no passwords).
-- Client may not enroll or list users (`403`).
+- Admin may `DELETE /users/{userId}` to remove another user. That user's project grants are removed with them. Their existing tokens stop working, and login with that id fails.
+- An admin may not delete their own account (`409`).
+- Unknown user id yields `404`.
+- Client may not enroll, list, or delete users (`403`).
 
 ### Project authorization (Admin)
 
@@ -85,8 +88,8 @@ On startup, files under the storage root that are absent from the artifact index
 | 401 | No/invalid token, or bad login credentials |
 | 403 | Authenticated but insufficient role or project grant |
 | 400 | Invalid body/path/multipart |
-| 404 | Unknown user on grant, or missing file on download |
-| 409 | Enroll with existing user id |
+| 404 | Unknown user on grant or delete, or missing file on download |
+| 409 | Enroll with existing user id, or delete your own account |
 | 201 | User enrolled or file uploaded |
 | 204 | Grant or delete succeeded with no body |
 | 200 | Successful read/list/login |
@@ -96,7 +99,7 @@ On startup, files under the storage root that are absent from the artifact index
 - Password reset, self-registration, external IdP
 - HTTPS termination, rate limiting
 - Docker/S3 adapters (storage port exists; S3 not required by this spec)
-- Revoking grants or deleting users (not required yet)
+- Revoking a grant without deleting the user
 
 ## Reference
 

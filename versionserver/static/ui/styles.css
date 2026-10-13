@@ -239,6 +239,21 @@ button.ghost {
   border-left: 1px solid var(--line);
 }
 
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.15rem;
+}
+
+.user-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .file-row {
   display: flex;
   align-items: center;

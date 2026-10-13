@@ -8,6 +8,7 @@ def test_protected_routes_reject_missing_tokens(tmp_path):
             "/users",
             json={"userId": "x", "password": "y", "role": "Client"},
         ).status_code == 401
+        assert client.delete("/users/alice").status_code == 401
         assert client.post("/projects/alpha/access", json={"userId": "alice"}).status_code == 401
         assert client.get("/projects/alpha/versions").status_code == 401
         assert client.get("/projects/alpha/versions/1.0/files").status_code == 401

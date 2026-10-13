@@ -39,14 +39,14 @@ or the `VS_TOKEN` cookie (no in-memory server session map).
 | `401 Unauthorized` | Missing or invalid JWT; bad login credentials |
 | `403 Forbidden` | Authenticated, but role/project access denied |
 | `400 Bad Request` | Missing/invalid path or body |
-| `404 Not Found` | Unknown user on grant; missing file |
-| `409 Conflict` | Enroll with an existing user id |
+| `404 Not Found` | Unknown user on grant or delete; missing file |
+| `409 Conflict` | Enroll with an existing user id, or delete your own account |
 
 ### Roles
 
 | Role | Capabilities |
 |------|----------------|
-| **Admin** | Enroll users; list users; grant project access; upload/delete files; see **every** project; list/download any project's versions and files |
+| **Admin** | Enroll and delete users; list users; grant project access; upload/delete files; see **every** project; list/download any project's versions and files |
 | **Client** | See only projects they were granted; list/download those projects' versions and files |
 
 ### Seeded users
@@ -174,6 +174,18 @@ Enrolls a new user.
 ```
 
 **Errors:** `401`, `403`, `400` (blank user id or empty password), `409` (user id already exists).
+
+---
+
+### `DELETE /users/{userId}`
+
+Requires **Admin**.
+
+Deletes an enrolled user and that user's project grants. The user can no longer log in, and tokens issued for them stop working. An admin cannot delete their own account.
+
+**Response:** `204 No Content`
+
+**Errors:** `401`, `403`, `404` (user id not enrolled), `409` (deleting your own account).
 
 ---
 
@@ -387,4 +399,9 @@ CAROL=$(curl -s -X POST http://localhost:8080/login \
 
 curl -s -H "Authorization: Bearer $CAROL" \
   http://localhost:8080/projects/alpha/versions/1.0/files
+
+# Delete carol (an admin cannot delete their own account)
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/users/carol
 ```
