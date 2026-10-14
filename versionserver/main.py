@@ -8,7 +8,7 @@ import uvicorn
 
 from versionserver.app import create_app
 from versionserver.config import AppConfig
-from versionserver.logging_config import configure_logging
+from versionserver.logging_config import configure_logging, use_process_logging
 from versionserver.signing import CertificateSigning, HOW_TO_CREATE, InvalidSigning, load_jwt_signing
 from versionserver.tls import (
     MISSING,
@@ -26,6 +26,7 @@ HTTP_PORT = 8080
 
 def build_app():
     """ASGI app for hosts that import the process instead of calling main()."""
+    use_process_logging()
     config, _signing_description = config_from_env()
     return create_app(config)
 
