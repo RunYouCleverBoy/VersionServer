@@ -33,6 +33,10 @@ ensure_env_file() {
 # Or set an absolute host path to bind-mount that directory instead.
 VERSION_SERVER_DATA_DIR=
 
+# Users, grants, and the artifact index. Leave empty to keep them in store.json.
+# File bytes stay on disk either way. Do not commit a real URI.
+MONGODB_URI=
+
 # HMAC secret for login cookies. Changing it signs everyone out.
 # Ignored for signing when VERSION_SERVER_JWT_CERT and VERSION_SERVER_JWT_KEY are set.
 VERSION_SERVER_JWT_SECRET="${secret}"
@@ -79,6 +83,7 @@ load_runtime_env() {
     : "${VERSION_SERVER_PORT:=8080}"
     : "${VERSION_SERVER_UPLOAD_MAX_BYTES:=1073741824}"
     : "${VERSION_SERVER_DATA_DIR:=}"
+    : "${MONGODB_URI:=}"
     : "${VERSION_SERVER_JWT_CERT:=}"
     : "${VERSION_SERVER_JWT_KEY:=}"
     : "${VERSION_SERVER_JWT_KEY_PASSWORD:=}"
@@ -98,6 +103,7 @@ load_runtime_env() {
     fi
 
     export VERSION_SERVER_DATA_DIR VERSION_SERVER_PORT VERSION_SERVER_UPLOAD_MAX_BYTES
+    export MONGODB_URI
     export VERSION_SERVER_JWT_SECRET VERSION_SERVER_JWT_CERT VERSION_SERVER_JWT_KEY
     export VERSION_SERVER_JWT_KEY_PASSWORD
     export VERSION_SERVER_TLS_CERT VERSION_SERVER_TLS_KEY VERSION_SERVER_TLS_KEY_PASSWORD

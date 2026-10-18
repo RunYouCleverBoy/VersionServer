@@ -10,6 +10,7 @@ dependencies = [
     "markdown>=3.7",
     "pyjks>=20.0.0",
     "pyjwt>=2.10.1",
+    "pymongo>=4.11",
     "python-multipart>=0.0.20",
     "uvicorn[standard]>=0.34.0",
 ]

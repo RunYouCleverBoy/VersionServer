@@ -11,6 +11,7 @@ from versionserver.pem import is_rsa_pair, private_key_matches
 class AppConfig:
     storage_root: Path
     json_store_path: Path
+    mongo_uri: str | None = None
     jwt_secret: str = "dev-only-change-me"
     jwt_certificate: x509.Certificate | None = None
     jwt_private_key: RSAPrivateKey | None = None

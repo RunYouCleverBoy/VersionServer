@@ -38,8 +38,16 @@ _FILENAME_STAR = re.compile(r"filename\*=(?:UTF-8|utf-8)''([^;]+)")
 _FILENAME = re.compile(r'filename="((?:\\.|[^"\\])*)"|filename=([^;\s]+)', re.IGNORECASE)
 
 
+def _open_database(config: AppConfig):
+    if config.mongo_uri:
+        from versionserver.mongo import MongoDatabase
+
+        return MongoDatabase(config.mongo_uri)
+    return JsonDatabase(config.json_store_path)
+
+
 def create_app(config: AppConfig, file_store: FileStore | None = None) -> FastAPI:
-    database = JsonDatabase(config.json_store_path)
+    database = _open_database(config)
     store = file_store or FilesystemFileStore(config.storage_root)
     sync_artifacts_from_disk(database, store)
     if config.signing_key() is None:

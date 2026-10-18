@@ -13,6 +13,7 @@ services:
     environment:
       VERSION_SERVER_STORAGE: /var/lib/version-server/files
       VERSION_SERVER_JSON: /var/lib/version-server/store.json
+      MONGODB_URI: ${MONGODB_URI:-}
       VERSION_SERVER_LOG_DIR: /var/lib/version-server/logs
       VERSION_SERVER_JWT_SECRET: ${VERSION_SERVER_JWT_SECRET:?Set VERSION_SERVER_JWT_SECRET in .env}
       VERSION_SERVER_JWT_CERT: ${VERSION_SERVER_JWT_CERT:-}

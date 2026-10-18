@@ -31,6 +31,7 @@ def test_asgi_entrypoint_exports_fastapi(monkeypatch, tmp_path):
     monkeypatch.delenv("VERSION_SERVER_JWT_CERT", raising=False)
     monkeypatch.delenv("VERSION_SERVER_JWT_KEY", raising=False)
     monkeypatch.delenv("VERSION_SERVER_JWT_KEY_PASSWORD", raising=False)
+    monkeypatch.delenv("MONGODB_URI", raising=False)
     import importlib
 
     import app as entry

@@ -346,7 +346,8 @@ Deletes the entire version: all files under it in storage, and all artifact meta
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `VERSION_SERVER_STORAGE` | `data/files` | Root directory for published file bytes (`{project}/{version}/...`) |
-| `VERSION_SERVER_JSON` | `data/store.json` | JSON database path (users, grants, artifact index; SHA-256 `passwordHash` only). Created with seeded users if missing or empty. |
+| `VERSION_SERVER_JSON` | `data/store.json` | JSON database path (users, grants, artifact index; SHA-256 `passwordHash` only). Created with seeded users if missing or empty. Unused when `MONGODB_URI` is set. |
+| `MONGODB_URI` | unset | MongoDB connection URI. When set, users, grants, and the artifact index are stored in the `version-server` database (or the database named in the URI). File bytes stay on `VERSION_SERVER_STORAGE`. |
 | `VERSION_SERVER_JWT_SECRET` | `dev-only-change-me` | HMAC secret used to sign/verify JWTs when no certificate is set |
 | `VERSION_SERVER_JWT_CERT` | unset | PEM certificate, or a path to it, whose public key verifies login tokens. A value containing `-----BEGIN` is the certificate text. |
 | `VERSION_SERVER_JWT_KEY` | unset | PEM RSA private key, or a path to it, used to sign login tokens. Required with `VERSION_SERVER_JWT_CERT`. |

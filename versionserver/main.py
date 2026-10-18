@@ -69,9 +69,9 @@ def main() -> None:
     elif isinstance(tls_load, ReadyTls):
         tls = tls_load.tls
     logger.info(
-        "starting VersionServer storage=%s json=%s logs=%s uploadMaxBytes=%s jwt=%s tls=%s",
+        "starting VersionServer storage=%s catalog=%s logs=%s uploadMaxBytes=%s jwt=%s tls=%s",
         config.storage_root.resolve(),
-        config.json_store_path.resolve(),
+        "mongo" if config.mongo_uri else config.json_store_path.resolve(),
         log_dir.resolve(),
         config.multipart_form_field_limit_bytes,
         signing_description,
@@ -91,11 +91,19 @@ def _config_from_env(signing: object) -> AppConfig:
     return AppConfig(
         storage_root=path_from_env("VERSION_SERVER_STORAGE", "data/files"),
         json_store_path=path_from_env("VERSION_SERVER_JSON", "data/store.json"),
+        mongo_uri=_mongo_uri(),
         jwt_secret=os.environ.get("VERSION_SERVER_JWT_SECRET") or "dev-only-change-me",
         jwt_certificate=certificate,
         jwt_private_key=private_key,
         multipart_form_field_limit_bytes=limit,
     )
+
+
+def _mongo_uri() -> str | None:
+    raw = os.environ.get("MONGODB_URI")
+    if raw is None or raw.strip() == "":
+        return None
+    return raw.strip()
 
 
 def _positive_int(raw: str | None, default: int) -> int:

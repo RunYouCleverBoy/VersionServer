@@ -14,6 +14,26 @@ from versionserver.models import (
 from versionserver.passwords import sha256_hex
 from versionserver.timefmt import format_instant, parse_instant
 
+
+def version_summaries(artifacts: list[PersistedArtifact]) -> list[VersionSummary]:
+    grouped: dict[str, list[PersistedArtifact]] = {}
+    for artifact in artifacts:
+        grouped.setdefault(artifact.version, []).append(artifact)
+    if not grouped:
+        return []
+
+    def sort_key(item: tuple[str, list[PersistedArtifact]]) -> tuple[datetime, str]:
+        name, rows = item
+        newest = max(parse_instant(artifact.uploaded_at) for artifact in rows)
+        return (newest, name)
+
+    latest_name = max(grouped.items(), key=sort_key)[0]
+    return [
+        VersionSummary(name=name, latest=name == latest_name)
+        for name in sorted(grouped)
+    ]
+
+
 _DEFAULT_USERS = (
     PersistedUser(id="admin", passwordHash=sha256_hex("admin-pass"), role=Role.Admin),
     PersistedUser(id="alice", passwordHash=sha256_hex("alice-pass"), role=Role.Client),
@@ -143,24 +163,8 @@ class JsonDatabase:
 
     def versions_for(self, project: str) -> list[VersionSummary]:
         with self._lock:
-            grouped: dict[str, list[PersistedArtifact]] = {}
-            for artifact in self._state.artifacts:
-                if artifact.project != project:
-                    continue
-                grouped.setdefault(artifact.version, []).append(artifact)
-            if not grouped:
-                return []
-
-            def sort_key(item: tuple[str, list[PersistedArtifact]]) -> tuple[datetime, str]:
-                name, artifacts = item
-                newest = max(parse_instant(artifact.uploaded_at) for artifact in artifacts)
-                return (newest, name)
-
-            latest_name = max(grouped.items(), key=sort_key)[0]
-            return [
-                VersionSummary(name=name, latest=name == latest_name)
-                for name in sorted(grouped)
-            ]
+            rows = [artifact for artifact in self._state.artifacts if artifact.project == project]
+        return version_summaries(rows)
 
     def artifacts(self, project: str, version: str) -> list[PersistedArtifact]:
         with self._lock:
