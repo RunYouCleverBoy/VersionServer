@@ -116,6 +116,9 @@ def test_web_client_assets_and_controls(tmp_path):
         script = client.get("/ui/app.js").text
         assert css.status_code == 200
         assert "--accent" in css.text
+        assert "overflow-wrap: anywhere" in css.text
+        assert ".menu .user-row button.danger" in css.text
+        assert "flex: 0 0 auto" in css.text
         assert "/login" in script
         assert "/projects" in script
         assert "collectFromDataTransfer" in script
